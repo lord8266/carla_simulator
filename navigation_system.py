@@ -21,7 +21,8 @@ class NavigationSystem:
         self.prev = pygame.time.get_ticks()
         self.dynamic_path  = None
         self.event_buffer = []
-    
+        self.re_route_ = False
+
     def add_event(self,prev_waypoints, next_waypoint):
         self.event_buffer.append( ( prev_waypoints,next_waypoint))
         self.make_parallel( prev_waypoints, next_waypoint)
@@ -53,7 +54,7 @@ class NavigationSystem:
         self.clean_route()
         self.fill_gaps()
         self.clean_back()
-        self.curr_pos = 1
+        self.curr_pos = 0
         self.prev_pos = None
         self.destination_index = len(self.ideal_route)-1
         # print(len(self.ideal_route))
@@ -144,7 +145,7 @@ class NavigationSystem:
             self.local_route = self.local_route + [self.local_route[-1]]*add
             self.local_route_waypoints = self.local_route_waypoints + [self.local_route_waypoints[-1]]*add
         # print("choosing %d\n"%(self.curr_pos))
-        self.fill_local_route_gaps()
+        # self.fill_local_route_gaps()
 
     def fill_local_route_gaps(self):
 
@@ -159,6 +160,7 @@ class NavigationSystem:
         loc_start = self.simulator.vehicle_variables.vehicle_waypoint.transform
         loc_end = self.destination
         self.make_ideal_route_r(loc_start,loc_end)
+        self.re_route_ = True
         self.simulator.reward_system.prev_pos = 0
 
 

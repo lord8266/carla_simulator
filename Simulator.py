@@ -130,7 +130,6 @@ class Simulator:
         self.last_stop = pygame.time.get_ticks()
         self.cnt = 0
         self.collide_cnt = 0
-        
     def temp(self):
         self.vehicle_controller.vehicle.set_transform(self.navigation_system.start)
 
@@ -236,6 +235,9 @@ class Simulator:
         self.vehicle_variables.update()
         self.game_manager.update()
         self.navigation_system.make_local_route()
+        if self.navigation_system.re_route_:
+            self.navigation_system.re_route_=False
+            self.navigation_system.make_local_route()
 
         self.observation = self.get_observation()
         reward,status = self.reward_system.update_rewards()
