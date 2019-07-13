@@ -86,6 +86,7 @@ class VehicleController:
     
     def apply_control(self):
         if self.cmp_control():
+            # print("ControlCHange:" ,self.control)
             if self.simulator.key_control:
                 print("Imitate:",self.control)
             else:

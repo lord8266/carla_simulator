@@ -18,6 +18,8 @@ import reward_system
 HIDDEN1_UNITS = 50
 HIDDEN2_UNITS = 40
 import os
+import traffic_controller
+
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
@@ -25,100 +27,116 @@ class ControlState(Enum):
     AI=1,
     MANUAL=2
 
+class LaneState(Enum):
+    SAME_LANE=1,
+    LANE_CHANGE=2,
+
 class CollisionControl:
 
-    def __init__(self,lane_ai):
-        self.lane_ai = lane_ai
-        self.lane_changer = lane_ai.lane_changer
-        self.simulator = lane_ai.simulator
-        self.state = ControlState.MANUAL
-        self.environment = SpeedControlEnvironment(self)
-        self.halt_time = pygame.time.get_ticks()
+    def __init__(self,trc):
+        self.traffic_controller = trc
+        self.control = trc.simulator.vehicle_controller.control
+        self.state = LaneState.SAME_LANE
+        self.curr_lane = self.traffic_controller.simulator.vehicle_variables.lane_id
 
     def update(self):
-        self.closest_obstacles = self.lane_ai.lane_closest
-        self.apply_condtions()
-    
-    def apply_condtions(self):
-        
-        if self.lane_changer.state==lane_ai.State.LANE_CHANGE:
-            self.disable_AI()
-            self.lane_changing_halt()
-            self.lane_changer.update_waypoint()
 
-        elif self.lane_changer.state==lane_ai.State.RUNNING:
-            if self.state==ControlState.AI:
-                self.modify_by_AI()
-            self.same_lane_halt()
-            self.check_new_lane()
-
-           
-    
-    def lane_changing_halt(self):
-        target_lane_id = self.lane_changer.target_lane_id
-
-        if target_lane_id in self.closest_obstacles:
-            closest_obstacle = self.closest_obstacles[target_lane_id]
-            if closest_obstacle.distance<7.5 and closest_obstacle.delta_d<0.005:
-                self.halt()
-            else:
-                self.halt_time = pygame.time.get_ticks()
-        self.same_lane_halt(distance=4)
-
-    def same_lane_halt(self,distance=7.5):
-        vehicle_lane_id = self.simulator.vehicle_variables.vehicle_waypoint.lane_id
-
-        if vehicle_lane_id in self.closest_obstacles:
-            closest_obstacle = self.closest_obstacles[vehicle_lane_id]
-            if closest_obstacle.distance<distance and closest_obstacle.delta_d<0.005:
-                self.halt()
-            else:
-                self.halt_time = pygame.time.get_ticks()
-    
-    def halt(self):
-        curr =pygame.time.get_ticks()
-        if (curr-self.halt_time)>300000:
-            self.simulator.re_level()
-            self.halt_time = curr
+        if self.state==LaneState.SAME_LANE:
+            self.update_same_lane()
         else:
-            self.disable_AI(failed=2)
-            vel = self.simulator.vehicle_variables.vehicle_velocity_magnitude
-            if vel>0.05:
-                self.simulator.vehicle_controller.destroy_movement()
-            control = self.simulator.vehicle_controller.control
-            control.throttle = 0
-            control.brake = 0.95
-    
-    def check_new_lane(self):
-        vehicle_lane_id = self.simulator.vehicle_variables.vehicle_waypoint.lane_id
+            self.update_same_lane(0)
+            self.update_target_lane()
 
-        if vehicle_lane_id in self.closest_obstacles:
-            closest_obstacle = self.closest_obstacles[vehicle_lane_id]
+        self.update_lane_change()
+        self.try_lane_change()
 
-            if 7.5<closest_obstacle.distance<30 and closest_obstacle.delta_d<0.005 :
-                change_lane = self.lane_changer.check_new_lane(min_angle=150)
-                if not change_lane:
-                    self.enable_AI(closest_obstacle)
+    def update_same_lane(self,type_=1):
 
-    
-    def enable_AI(self,closest_obstacle):
-        if self.state!=ControlState.AI:
-            self.state = ControlState.AI
-            self.environment.start(closest_obstacle)
-            closest_obstacle.ai_follower = self
-            print("Enabled AI")
-    
-    def disable_AI(self,failed=0):
-        if self.state==ControlState.AI:
-            self.state = ControlState.MANUAL
-            self.environment.stop(failed)
-            print("Disabled AI")
+        lane_obstacles = self.traffic_controller.lane_obstacles
+        lane_id = self.curr_lane
+        if lane_id in lane_obstacles:
+            if lane_obstacles[lane_id]:
+                front = lane_obstacles[lane_id][0]
 
-    def modify_by_AI(self):
-        obstacle = self.environment.obstacle
-        if obstacle.road_id!=self.environment.current_road:
-            self.disable_AI()
-        self.environment.ai.run_epoch()
+                d = front.distance
+                if type_==1:
+                    if 4<d<8 and front.delta_d<0.01:
+                        if self.traffic_controller.simulator.vehicle_variables.vehicle_velocity_magnitude>1.4:
+                            self.control.throttle/=2
+                        if self.traffic_controller.simulator.vehicle_variables.vehicle_velocity_magnitude>2.4:
+                            self.control.brake = 0.5
+
+                if d<4 and front.delta_d<0.01:
+                    self.control.throttle = 0.0
+                    self.control.brake = 1.0
+                    # print("Donned")
+
+    def update_target_lane(self):
+        lane_obstacles = self.traffic_controller.lane_obstacles
+        lane_id = self.target_lane
+        if lane_id in lane_obstacles:
+            if lane_obstacles[lane_id]:
+                front = lane_obstacles[lane_id][0]
+
+                d = front.distance
+
+                if d<6 and front.delta_d<0.01:
+                    self.control.throttle = 0.0
+                    self.control.brake = 1.0
+                    
+    def update_lane_change(self):
+        lc = self.traffic_controller.simulator.navigation_system.local_route_waypoints
+        road_id,lane_id = lc[0].road_id,lc[0].lane_id
+        self.curr_lane = lane_id
+
+        for a in lc[1:]:
+            a_road_id,a_lane_id = a.road_id,a.lane_id
+
+            if a_road_id==road_id:
+                if self.state ==LaneState.SAME_LANE:
+                    if a_lane_id!=lane_id:
+                        self.state  =LaneState.LANE_CHANGE
+                        print("New lane:",a_lane_id)
+                        self.target_lane = a_lane_id
+                        return
+            else:
+                if self.state==LaneState.LANE_CHANGE:
+                    print("Reset lane Change:",self.target_lane)
+                    self.state  =LaneState.SAME_LANE
+                    return
+                    
+        
+        if self.state==LaneState.LANE_CHANGE and  self.curr_lane==self.target_lane:
+            print("Reach new Lane:",self.target_lane)
+            self.state = LaneState.SAME_LANE
+
+                   
+    def try_lane_change(self,force=False):
+
+        lane_id = self.traffic_controller.simulator.vehicle_variables.lane_id
+        lane_obstacles = self.traffic_controller.lane_obstacles
+        passed = False
+        if lane_id in lane_obstacles:
+            if lane_obstacles[lane_id]:
+                obs_same = lane_obstacles[lane_id][0]
+
+                if 6<obs_same.distance<15:
+                    passed,prev_,next_ = self.change_lane()
+                    if passed:
+                        lane_id =next_.lane_id
+                        if lane_id in lane_obstacles:
+                            if lane_obstacles[lane_id]:
+                                obs_next = lane_obstacles[lane_id][0]
+                                if (obs_next.distance-obs_same.distance)<2:
+                                    passed = False
+                        
+        if passed or force:
+            self.traffic_controller.simulator.navigation_system.add_event(prev_,next_)
+
+
+
+    def change_lane(self):
+        return self.traffic_controller.simulator.lane_ai.request_new_lane()
 
 
 class SpeedControlEnvironment:

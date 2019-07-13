@@ -17,6 +17,7 @@ import traffic_controller
 from agents.navigation import basic_agent
 import data_collector
 import ai_model
+
 class Type(Enum):
     Automatic =1
     Manual =2
@@ -123,7 +124,7 @@ class Simulator:
         # self.add_npc()
         self.world.tick()
         self.world.wait_for_tick()
-        self.data_collector = data_collector.DataCollector(self)
+        # self.data_collector = data_collector.DataCollector(self)
         # self.collision_collector = data_collector.CollisionCollector(self)
         # self.free_road = ai_model.FreeRoad(self.vehicle_controller.control)
         self.last_stop = pygame.time.get_ticks()
@@ -247,7 +248,7 @@ class Simulator:
             
         
         self.render()
-        self.traffic_controller.update()
+        
 
         curr = pygame.time.get_ticks()
         vel = self.vehicle_variables.vehicle_velocity_magnitude
@@ -264,7 +265,9 @@ class Simulator:
         #     control = self.vehicle_controller.control
         #     control.throttle = 0.0
         #     control.brake = 1.0
+        self.traffic_controller.update()
         self.vehicle_controller.control_by_input(passive=True)
+
         self.vehicle_controller.apply_control()
         
         

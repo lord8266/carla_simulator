@@ -105,8 +105,7 @@ class LaneAI:
             vehicle =self.simulator.vehicle_variables.vehicle_location
             waypoint = self.simulator.map.get_waypoint(vehicle)
             next_waypoint =None
-            print(waypoint.lane_change)
-            self.lane_prev = curr
+            
             if prefer_left:
                 if str(waypoint.lane_change)=='Left' or str(waypoint.lane_change)=='Both':
                     next_waypoint = waypoint.get_left_lane()
@@ -129,18 +128,54 @@ class LaneAI:
                     pass
                     # print("Not Possible")
                 
-            
+            self.lane_prev = curr
                 
             
-            return next_waypoint
+            return self.check_waypoint_integrity(next_waypoint)
         
-        return None
-        
-        # if next_waypoint:
-        #     debug = self.simulator.world.debug
-        #     # drawing_library.draw_lines(self.simulator.world.debug,[i.transform.location for i in [waypoint,next_waypoint] ],color=carla.Color(255,0,0) )
-        #     debug.draw_line(waypoint.transform.location,next_waypoint.transform.location,life_time=3,color=carla.Color(255,0,0))
-        #     self.simulator.navigation_system.make_parallel(next_waypoint)
+        return False,None,None
+
+    def check_waypoint_integrity(self,next_waypoint):
+
+        if next_waypoint:
+            curr_waypoint = self.simulator.vehicle_variables.vehicle_waypoint
+            start_ = curr_waypoint
+            road_id,lane_id = curr_waypoint.road_id,curr_waypoint.lane_id
+            passed = True
+            additional = []
+            for i in range(3):
+                if passed: 
+                    curr_waypoint = curr_waypoint.next(2.1)
+                    if curr_waypoint:
+                        curr_waypoint = curr_waypoint[0]
+                        if curr_waypoint.road_id==road_id and curr_waypoint.lane_id==lane_id:
+                            additional.append(curr_waypoint)
+                            print(additional)
+                        else:
+                            passed = False
+                    else:
+                        passed = False
+            road_id,lane_id = next_waypoint.road_id,next_waypoint.lane_id
+            if passed:
+                for i in range(3):
+                    if passed: 
+                        next_waypoint = next_waypoint.next(2.5)
+                        if next_waypoint:
+                            next_waypoint = next_waypoint[0]
+                            if next_waypoint.road_id==road_id and next_waypoint.lane_id==lane_id:
+                                pass
+                            else:
+                                passed = False
+                        else:
+                            passed = False
+            
+            if passed:
+                return True,[start_]+additional,next_waypoint
+            else:
+                return False,None,None
+        else:
+            return False,None,None
+
 
     def check_waypoint_angle(self,next_waypoint,vehicle_transform,turn_angle=150):
        
@@ -277,31 +312,45 @@ class LaneAI:
 
 class Obstacle:
 
-    def __init__(self,simulator,vehicle):
+    def __init__(self,simulator,vehicle,distance):
         self.simulator = simulator
         self.vehicle = vehicle
         self.last_updated = pygame.time.get_ticks()
         self.prev_distance = 0
-        self.update()
+        self.update_cnt = 0
+        self.update(distance)
         self.ai_follower = None
         self.extent = self.vehicle.bounding_box.extent
-
-    def update(self):
+        
+    def update(self,distance):
         # self.last_updated = pygame.time.get_ticks()
         self.location = self.vehicle.get_location()
         self.distance = navigation_system.NavigationSystem.get_distance(self.location,self.simulator.vehicle_variables.vehicle_location,res=1)
         self.waypoint = self.simulator.map.get_waypoint(self.location)
         self.road_id = self.waypoint.road_id
         self.lane_id = self.waypoint.lane_id
-
-        self.delta_d = self.distance-self.prev_distance
-        self.prev_distance = self.distance
+        self.bounding_box = self.vehicle.bounding_box
         self.get_direction()
-        
+        self.get_distance(distance)
+        self.delta_d = self.distance-self.prev_distance
+        if not self.update_cnt%7:
+            self.prev_distance = self.distance
+        self.update_cnt+=1
+        if self.update_cnt>10000:
+            self.update_cnt =0
+
     def __str__(self):
         
         return f'{self.vehicle}, Distance:{self.distance}, Delta_D:{self.delta_d}, Angle:{self.angle}'
 
+    def get_distance(self,distance):
+        e1 = self.simulator.vehicle_controller.vehicle.bounding_box.extent
+        extent1 = max([e1.x,e1.y,e1.z])
+        e2 = self.bounding_box.extent
+        extent2 = max([e2.x,e2.y,e2.z])
+        distance -=(extent1+extent2)*abs( math.cos(math.radians(self.angle)))
+        self.distance = max(0,min(distance,70))
+    
     
     def get_direction(self):
         

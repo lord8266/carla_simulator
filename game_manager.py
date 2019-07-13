@@ -96,7 +96,8 @@ class GameManager:
                     raise Exception()
                 
                 if event.key==pygame.K_l:
-                    self.simulator.lane_ai.lane_changer.check_new_lane(force=True)
+                    pass
+                    # self.simulator.traffic_controller.collision_control.change_lane()
                     
 
                 if event.key==pygame.K_r:

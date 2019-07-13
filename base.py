@@ -13,8 +13,8 @@ def get_action():
     max_ = len(simulator.control_manager.controls)
     return np.random.randint(0,max_)
 
-simulator = Simulator.Simulator('172.16.175.136')
-# simulator = Simulator.Simulator()
+# simulator = Simulator.Simulator('172.16.175.136')
+simulator = Simulator.Simulator()
 
 
 model = ai_model.Model(simulator,6,len(simulator.control_manager.controls))
@@ -32,8 +32,8 @@ while running:
     observation,reward,done,_ = simulator.step(action)
     curr_reward+=reward
     if (curr-prev)>1000/200:
-        # print("Reward: ",simulator.reward_system.curr_reward)
-        # print(observation, end='\n\n')
+        print("Reward: ",simulator.reward_system.curr_reward)
+        print(observation, end='\n\n')
         # print(simulator.vehicle_controller.control)
         # print(simulator.vehicle_variables.vehicle_location,simulator.navigation_system.start.location)
         prev =curr

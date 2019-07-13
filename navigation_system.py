@@ -22,9 +22,10 @@ class NavigationSystem:
         self.dynamic_path  = None
         self.event_buffer = []
     
-    def add_event(self,next_waypoint):
-        self.event_buffer.append(next_waypoint)
-        self.make_parallel(next_waypoint)
+    def add_event(self,prev_waypoints, next_waypoint):
+        self.event_buffer.append( ( prev_waypoints,next_waypoint))
+        self.make_parallel( prev_waypoints, next_waypoint)
+
     def make_map_data(self,res=3):
         self.map_data = global_route_planner_dao.GlobalRoutePlannerDAO(self.simulator.map,res)
         self.route_planner = global_route_planner.GlobalRoutePlanner(self.map_data)
@@ -58,9 +59,9 @@ class NavigationSystem:
         # print(len(self.ideal_route))
         self.write_data()
     
-    def make_parallel(self,start_waypoint,max_lane=100,width=2.5):
+    def make_parallel(self,prev_waypoints,start_waypoint,max_lane=100,width=2.5):
         # print("make parallel")
-        parallel_lane = [start_waypoint]
+        parallel_lane =  prev_waypoints+[start_waypoint]
         road_id,lane_id = start_waypoint.road_id,start_waypoint.lane_id
 
         while 1:
@@ -84,7 +85,6 @@ class NavigationSystem:
             if start_waypoint_current.road_id!=road_id and start_waypoint_current.lane_id!=lane_id:
                 break
             curr_pos+=1
-        
         self.curr_pos = min(len(self.ideal_route_waypoints)-1,curr_pos) 
         self.start = parallel_lane[0].transform
         self.ideal_route_waypoints = parallel_lane+ self.ideal_route_waypoints[self.curr_pos:]
@@ -137,10 +137,12 @@ class NavigationSystem:
             self.curr_pos = min(i,len(self.ideal_route)-1)
         # print("Choosing ",i)
         self.local_route = [self.simulator.vehicle_variables.vehicle_transform]+self.ideal_route[self.curr_pos:self.curr_pos+4]
+        self.local_route_waypoints = [self.simulator.vehicle_variables.vehicle_waypoint]+self.ideal_route_waypoints[self.curr_pos:self.curr_pos+4]
 
         if len(self.local_route)<5:
             add = 5-len(self.local_route)
             self.local_route = self.local_route + [self.local_route[-1]]*add
+            self.local_route_waypoints = self.local_route_waypoints + [self.local_route_waypoints[-1]]*add
         # print("choosing %d\n"%(self.curr_pos))
         self.fill_local_route_gaps()
 
