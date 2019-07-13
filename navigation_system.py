@@ -53,7 +53,7 @@ class NavigationSystem:
         self.clean_route()
         self.fill_gaps()
         self.clean_back()
-        self.curr_pos = 0
+        self.curr_pos = 1
         self.prev_pos = None
         self.destination_index = len(self.ideal_route)-1
         # print(len(self.ideal_route))

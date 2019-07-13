@@ -114,7 +114,7 @@ class Simulator:
         self.key_control = False
         self.collision_vehicle =False
         self.traffic_controller = traffic_controller.TrafficController(self,80)
-        self.traffic_controller.add_vehicles()
+        # self.traffic_controller.add_vehicles()
         self.lane_ai = lane_ai.LaneAI(self)
         #need to change from here
         self.navigation_system.make_local_route()
@@ -265,7 +265,7 @@ class Simulator:
         #     control = self.vehicle_controller.control
         #     control.throttle = 0.0
         #     control.brake = 1.0
-        self.traffic_controller.update()
+        # self.traffic_controller.update()
         self.vehicle_controller.control_by_input(passive=True)
 
         self.vehicle_controller.apply_control()
@@ -292,8 +292,8 @@ class Simulator:
 
         rot_offsets = self.navigation_system.get_rot_offset() # temporary
         distance_to_destination_sin, distance_to_destination_cos= self.navigation_system.get_offset_distance()
-       
-        return [distance_to_destination_sin,distance_to_destination_cos]+ list(np.clip(rot_offsets[:4],-70,70))
+        speed = self.vehicle_variables.vehicle_velocity_magnitude
+        return [speed,distance_to_destination_sin]+ list(np.clip(rot_offsets[:3],-70,70))
         
 
     def reset(self):
