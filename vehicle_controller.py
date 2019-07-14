@@ -81,7 +81,14 @@ class VehicleController:
         VehicleController.equate_controls(self.control,control) 
         angle = self.simulator.observation[2]
         self.control.steer = self.control.steer*angle/70
-        self.control.steer =np.clip(self.control.steer,-0.55,0.55)
+        self.control.steer = np.clip(self.control.steer,-0.55,0.55)
+
+    def change_control(self,control):
+        
+        #changing controls for actor_critic model
+        self.control.steer=control[0]
+        self.control.throttle=control[1]
+        self.control.brake=control[2]
          
     
     def apply_control(self):

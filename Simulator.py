@@ -227,8 +227,8 @@ class Simulator:
     def initialize_variables(self):
         self.vehicle_variables = VehicleVariables(self)
         self.vehicle_variables.start_wait(self.navigation_system.start)
-    
-    def step(self,action):
+ 
+    def step(self,action,model=1):
         # self.world.tick()
         # ts = self.world.wait_for_tick()
 
@@ -242,8 +242,11 @@ class Simulator:
         
         if self.type == Type.Manual:
             self.vehicle_controller.control_by_input()
-        else:
+        elif model==1:
             self.vehicle_controller.copy_control(self.control_manager.controls[action])
+        elif model==2:
+            self.vehicle_controller.change_control(action)
+
             
         
         self.render()
