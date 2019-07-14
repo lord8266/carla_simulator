@@ -10,7 +10,7 @@ from queue import Queue
 
 class GameManager:
 
-    def __init__(self,simulator,resolution=(640,480)):
+    def __init__(self,simulator,resolution=(1280,720)):
         self.initialize_pygame(resolution)
         self.simulator = simulator
         self.new_frame = False
@@ -26,7 +26,15 @@ class GameManager:
         self.pixel_buffer  =PixelBuffer(simulator)
         self.saver_pixels = None
         self.started = False
-        
+        self.wait_time()
+
+    def wait_time(self):
+        stop = True
+        while stop:
+            for event in pygame.event.get():
+
+                if event.type==pygame.KEYDOWN:
+                    stop=False
     def initialize_pygame(self,resolution):
         pygame.init()
         self.display = pygame.display.set_mode(resolution,pygame.HWSURFACE | pygame.DOUBLEBUF)
@@ -97,7 +105,7 @@ class GameManager:
                 
                 if event.key==pygame.K_l:
                     pass
-                    # self.simulator.traffic_controller.collision_control.change_lane()
+                    self.simulator.traffic_controller.collision_control.try_lane_change(force=True)
                     
 
                 if event.key==pygame.K_r:

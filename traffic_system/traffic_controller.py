@@ -34,6 +34,8 @@ class TrafficController:
         self.curr_locations = []
         self.lane_obstacles = {}
         self.collision_control = collision_control.CollisionControl(self)
+        self.override = False
+
     def add_vehicles(self):
         blueprints = self.simulator.world.get_blueprint_library().filter('vehicle.*')
         blueprints = [x for x in blueprints if int(x.get_attribute('number_of_wheels')) == 4]
@@ -76,7 +78,7 @@ class TrafficController:
             self.curr_locations.append(p2)
             d = navigation_system.NavigationSystem.get_distance(p1,p2,res=1)
             
-            if d<20:
+            if d<30:
                 passed =False
                 if v.id in self.obstacles:
                     passed=True
@@ -181,6 +183,7 @@ class TrafficController:
             # print("\n".join( [str(i[1]) for i in data] ))
             # print(self.ai_observation)
             # print(self.surrounding_data)
+            print(self.collision_control.state)
             for _,a in self.lane_obstacles.items():
                 if _==lane_id:
                     print("Lane:",_,"(Vehicle)")
@@ -292,7 +295,7 @@ class TrafficController:
         self.update_distances()
         self.surrounding_data = self.predict_future()
         self.collision_control.update()
-        # self.print_obstacles()
+        self.print_obstacles()
 
         
 

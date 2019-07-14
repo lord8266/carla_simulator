@@ -27,19 +27,21 @@ clock = pygame.time.Clock()
 
 
 while running:
-    action = get_action() # model.predict(observation)
+    # clock.tick_busy_loop(60)
+    action =model.predict(observation)
     curr = pygame.time.get_ticks()
     observation,reward,done,_ = simulator.step(action)
     curr_reward+=reward
     if (curr-prev)>1000/200:
-        print("Reward: ",simulator.reward_system.curr_reward)
-        print(observation, end='\n\n')
+        # print("Reward: ",simulator.reward_system.curr_reward)
+        # print(observation, end='\n\n')
         # print(simulator.vehicle_controller.control)
         # print(simulator.vehicle_variables.vehicle_location,simulator.navigation_system.start.location)
         prev =curr
     # print(1000/(curr-prev))
     # prev = curr
     if done:
+        # print("here")
         simulator.reset()
         continue
 
@@ -60,6 +62,7 @@ while running:
     #     simulator.re_level()
     #     running = simulator.running
     #     print("local" + str(e))
+
 
 simulator.stop()
 pygame.quit()

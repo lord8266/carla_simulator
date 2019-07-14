@@ -44,7 +44,7 @@ class CollisionControl:
         if self.state==LaneState.SAME_LANE:
             self.update_same_lane()
         else:
-            self.update_same_lane(0)
+            # self.update_same_lane(0)
             self.update_target_lane()
 
         self.update_lane_change()
@@ -60,16 +60,21 @@ class CollisionControl:
 
                 d = front.distance
                 if type_==1:
-                    if 4<d<8 and front.delta_d<0.01:
-                        if self.traffic_controller.simulator.vehicle_variables.vehicle_velocity_magnitude>1.4:
+                    if 5.5<d<10.5 and front.delta_d<0:
+                        if self.traffic_controller.simulator.vehicle_variables.vehicle_velocity_magnitude>1:
                             self.control.throttle/=2
-                        if self.traffic_controller.simulator.vehicle_variables.vehicle_velocity_magnitude>2.4:
-                            self.control.brake = 0.5
 
-                if d<4 and front.delta_d<0.01:
-                    self.control.throttle = 0.0
-                    self.control.brake = 1.0
-                    # print("Donned")
+                            
+
+                    if d<5.5 and front.delta_d<0:
+                        self.control.throttle = 0.0
+                        self.control.brake = 1.0
+                        # print("Donned")
+                else:
+                     if d<0.7 and front.delta_d<0:
+                            self.control.throttle = 0.0
+                            self.control.brake = 1.0
+                            # print("Donned")
 
     def update_target_lane(self):
         lane_obstacles = self.traffic_controller.lane_obstacles
@@ -80,7 +85,7 @@ class CollisionControl:
 
                 d = front.distance
 
-                if d<6 and front.delta_d<0.01:
+                if d<4 and front.delta_d<0.01:
                     self.control.throttle = 0.0
                     self.control.brake = 1.0
                     
@@ -89,25 +94,25 @@ class CollisionControl:
         road_id,lane_id = lc[0].road_id,lc[0].lane_id
         self.curr_lane = lane_id
 
-        for a in lc[1:]:
+        found_change = False
+        for a in lc[:2]:
             a_road_id,a_lane_id = a.road_id,a.lane_id
 
             if a_road_id==road_id:
-                if self.state ==LaneState.SAME_LANE:
-                    if a_lane_id!=lane_id:
-                        self.state  =LaneState.LANE_CHANGE
-                        print("New lane:",a_lane_id)
-                        self.target_lane = a_lane_id
-                        return
-            else:
-                if self.state==LaneState.LANE_CHANGE:
-                    print("Reset lane Change:",self.target_lane)
-                    self.state  =LaneState.SAME_LANE
+            
+                if a_lane_id!=lane_id:
+                    print("here")
+                    self.state  =LaneState.LANE_CHANGE
+                    # print("New lane:",a_lane_id)
+                    self.target_lane = a_lane_id
+                    found_change = True
                     return
+
                     
         
-        if self.state==LaneState.LANE_CHANGE and  self.curr_lane==self.target_lane:
-            print("Reach new Lane:",self.target_lane)
+        if found_change:
+            self.state = LaneState.LANE_CHANGE
+        else:
             self.state = LaneState.SAME_LANE
 
                    
@@ -116,6 +121,12 @@ class CollisionControl:
         lane_id = self.traffic_controller.simulator.vehicle_variables.lane_id
         lane_obstacles = self.traffic_controller.lane_obstacles
         passed = False
+        if force:
+            passed,prev_,next_ = self.change_lane()
+            if passed:
+                self.traffic_controller.simulator.navigation_system.add_event(prev_,next_)
+            return
+            
         if lane_id in lane_obstacles:
             if lane_obstacles[lane_id]:
                 obs_same = lane_obstacles[lane_id][0]
@@ -130,7 +141,7 @@ class CollisionControl:
                                 if (obs_next.distance-obs_same.distance)<2:
                                     passed = False
                         
-        if passed or force:
+        if passed:
             self.traffic_controller.simulator.navigation_system.add_event(prev_,next_)
 
 

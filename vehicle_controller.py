@@ -79,9 +79,9 @@ class VehicleController:
     def copy_control(self,control): 
 
         VehicleController.equate_controls(self.control,control) 
-        # angle = self.simulator.observation[2]
-        # self.control.steer = self.control.steer*angle/70
-        # self.control.steer =np.clip(self.control.steer,-0.55,0.55)
+        angle = self.simulator.observation[2]
+        self.control.steer = self.control.steer*angle/70
+        self.control.steer =np.clip(self.control.steer,-0.6,0.6)
          
     
     def apply_control(self):

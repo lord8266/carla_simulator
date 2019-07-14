@@ -150,7 +150,7 @@ class LaneAI:
                         curr_waypoint = curr_waypoint[0]
                         if curr_waypoint.road_id==road_id and curr_waypoint.lane_id==lane_id:
                             additional.append(curr_waypoint)
-                            print(additional)
+                            # print(additional)
                         else:
                             passed = False
                     else:

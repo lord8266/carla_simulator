@@ -89,7 +89,7 @@ class RewardSystem:
         # # +discrete
         obs = self.simulator.observation
         angle = math.radians(obs[2])
-        self.curr_reward =  obs[0]*abs(math.cos(angle)) - obs[0]*abs(math.sin(angle)) - abs(obs[1])*2 
+        self.curr_reward =  obs[0]*abs(math.cos(angle)) - obs[0]*abs(math.sin(angle)) - abs(obs[1])*6 
     
         # self.curr_reward -= self.state_change_penalty()
 

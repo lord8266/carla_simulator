@@ -7,8 +7,8 @@ import os
 import random
 import reward_system
 import pygame
-HIDDEN1_UNITS = 200
-HIDDEN2_UNITS = 180
+HIDDEN1_UNITS = 50
+HIDDEN2_UNITS = 30
 
 class Model:
 
@@ -47,8 +47,8 @@ class Model:
         self.memory.append((state, action, reward, next_state, done))
 
     def act(self, state):
-        if random.random() <= self.epsilon:  
-            return random.randrange(self.action_size) 
+        # if random.random() <= self.epsilon:  
+        #     return random.randrange(self.action_size) 
         act_values = self.model.predict(state)
         return np.argmax(act_values[0])  # returns index value of o/p action
         # key_state,action = self.simulator.vehicle_controller.check_key_state()
