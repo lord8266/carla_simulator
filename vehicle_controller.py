@@ -20,7 +20,7 @@ class VehicleController:
         self.pid_controller = PIDLateralController(None)  
 
     def intialize_vehicle(self):
-        vehicle_blueprint = self.simulator.blueprint_library.find('vehicle.tesla.model3')
+        vehicle_blueprint = self.simulator.blueprint_library.find('vehicle.audi.tt')
         if vehicle_blueprint.has_attribute('color'):
             print(list(vehicle_blueprint.get_attribute('color').recommended_values))
 
