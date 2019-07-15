@@ -129,7 +129,7 @@ class SpeedControlEnvironment:
         # reward negative distance
         # self.actions = [30,20,-20,-40,-60,-120,-140]
         # self.ai = SpeedControlAI(self,input_size=4,action_size=7)
-        self.actions = [30,-70,-100,-130,-160,-190]
+        self.actions = [60,30,-90,-150,-160,-190]
         self.ai = SpeedControlAI(self,input_size=5,action_size=6)
 
     def start(self):
@@ -191,11 +191,13 @@ class SpeedControlEnvironment:
         other_distance = abs(s_obs[2])
         other_delta = s_obs[3]
         if 6<=car_distance<11:
-            curr_reward += (15-car_distance)*2
+            curr_reward += (15-car_distance)*4
+        # elif car_distance<6 and car_delta = 0.0:    
+        #     curr_reward +=30
         elif car_distance<6:    
-            curr_reward -=10
+            curr_reward -=50
         else:
-            curr_reward -= car_distance*2
+            curr_reward -= car_distance*4
 
         if -0.1<car_delta<0.1 and 6<=car_distance<11:
             curr_reward += 30
@@ -211,13 +213,13 @@ class SpeedControlEnvironment:
             curr_reward -= car_delta*10
         else:
             curr_reward += car_delta*50
-
+        
         # if other_distance<10 and other_delta<0:
             # curr_reward -= other_distance*5
 
 
 
-
+        print("reward :",curr_reward)
         return self.get_observation(),curr_reward
             
 
@@ -231,7 +233,7 @@ class SpeedControlAI:
         self.gamma = 0.95    # discount rate
         self.learning_rate=0.1
         self.running = True
-        self.epsilon = 0.8 # exploration rate
+        self.epsilon = 0.7 # exploration rate
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.model = self.build_model()
@@ -244,7 +246,7 @@ class SpeedControlAI:
         self.batch_size =32
         self.step =0
         self.start_episode=1
-        
+        self.action_choice = -1
     def build_model(self):
 
         model = Sequential()
@@ -262,6 +264,21 @@ class SpeedControlAI:
     def act(self, state):
         if random.random() <= self.epsilon:  
             return random.randrange(self.action_size) 
+        keys = pygame.key.get_pressed()
+        brake = 0
+        if keys[pygame.K_UP]:
+            brake= -1
+        if keys[pygame.K_DOWN]:
+            brake= 1
+        if brake!=0:
+            n = random.randint(0,2)
+            if brake == 1:
+                n += 3
+            return n
+        # if self.action_choice != -1:
+        #     x = self.action_choice
+        #     self.action_choice = -1
+        #     return x
         act_values = self.model.predict(state)
         return np.argmax(act_values[0]) 
         # print(state)
@@ -289,7 +306,7 @@ class SpeedControlAI:
             if self.epsilon > self.epsilon_min:
                 self.epsilon *= self.epsilon_decay
             else:
-                self.epsilon = 0.35
+                self.epsilon = 0.1
         elif self.episode % 30 != 0 :
             self.start_episode = 1
 
@@ -317,7 +334,7 @@ class SpeedControlAI:
         action = self.act(prev_state)
         state,reward = self.environment.modify_control(action)
         if failed:
-            reward-=1500
+            reward-=5500
         # print("State:"+str(state),"Reward:" + str(reward),sep='\n',end='\n\n')
         state = np.reshape(state, [1, self.state_size])
         self.remember(prev_state, action, reward, state, done)
@@ -338,4 +355,3 @@ class SpeedControlAI:
         return action
 
         
-

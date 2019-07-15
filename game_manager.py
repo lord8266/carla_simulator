@@ -82,25 +82,19 @@ class GameManager:
                 if event.key==pygame.K_c:
                     self.simulator.camera_switch()
 
-                if event.key==pygame.K_a:
-                    
-                    f= open('density.txt','a')
-                    density = sum(np.all(self.array==[0,0,142],axis=1))
-                    f.write(str(density)+"\n")
-                    f.close()
 
                 if event.key ==pygame.K_q:
                     self.simulator.reward_system.status = Simulator.Status.COMPLETED
-
-                if event.key ==pygame.K_b:
-                    raise Exception()
                 
                 if event.key==pygame.K_l:
                     self.simulator.lane_ai.lane_changer.check_new_lane(force=True)
                     
 
-                if event.key==pygame.K_r:
-                    pass
+                # if event.key==pygame.K_UP:
+
+                #     self.simulator.traffic_controller.env.ai.change_action_state(0)
+                # if event.key==pygame.K_DOWN:
+                #     self.simulator.traffic_controller.env.ai.change_action_state(1)
                 #    self.simulator.lane_ai.lane_changer.check_new_lane(min_angle=150)
                    
             

@@ -137,6 +137,7 @@ class Simulator:
         self.client = carla.Client(carla_server,port)
         self.client.set_timeout(12.0)
         self.world = self.client.load_world('Town03')#self.client.get_world()
+        self.world.set_weather(carla.WeatherParameters.ClearSunset)
         # self.world = self.client.get_world()
         settings = self.world.get_settings() 
         # settings.synchronous_mode = True # 21 22 247 248
@@ -252,7 +253,7 @@ class Simulator:
         curr = pygame.time.get_ticks()
         vel = self.vehicle_variables.vehicle_velocity_magnitude
         traffic_light = self.sensor_manager.traffic_light_sensor()
-        if ((vel>0.02) or traffic_light==0) or self.traffic_controller.ai_enabled==False:
+        if ((vel>0.02) or traffic_light==0) or self.traffic_controller.ai_enabled==True:
             self.last_stop = curr
             
        
@@ -264,7 +265,7 @@ class Simulator:
         #     control = self.vehicle_controller.control
         #     control.throttle = 0.0
         #     control.brake = 1.0
-        self.vehicle_controller.control_by_input(passive=True)
+        # self.vehicle_controller.control_by_input(passive=True)
         self.vehicle_controller.apply_control()
         
         
