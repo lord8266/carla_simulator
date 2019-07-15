@@ -102,7 +102,7 @@ class RewardSystem:
             
     def update_rewards(self):
         self.curr_reward =0
-        self.checkpoint()
+        self.checkpoint()  
         # direction_reward =self.direction_penalty()
         # proximity_reward = self.proximity_penalty()
         # discrete = self.get_discrete_rewards()
@@ -110,8 +110,7 @@ class RewardSystem:
         # self.get_steer_reward()
         obs = self.simulator.observation
         angle = math.radians(obs[2])
-        self.curr_reward =  obs[0]*abs(math.cos(angle)) - obs[0]*abs(math.sin(angle)) - abs(obs[1])*10 
-    
+        self.curr_reward =  obs[0]*abs(math.cos(angle))
         # self.curr_reward -= self.state_change_penalty()
 
         # print(f"CheckPoint Reward: {checkpoint_reward}, Direction Reward: {direction_reward}, Proximity Reward: {proximity_reward}, Forward Reward: {forward_reward}\n")

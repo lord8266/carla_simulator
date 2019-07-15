@@ -7,8 +7,9 @@ import os
 import random
 import reward_system
 import pygame
-HIDDEN1_UNITS = 150
-HIDDEN2_UNITS = 160
+
+HIDDEN1_UNITS = 40
+HIDDEN2_UNITS = 50
 
 class Model:
 
@@ -96,7 +97,7 @@ class Model:
 
         done = False
         batch_size = 32
-        EPISODES = 700000
+        EPISODES = 7000
         prev_rewards =0
         for e in range(self.start,EPISODES):
             state = self.simulator.reset() #change to initial state
