@@ -7,8 +7,8 @@ import os
 import random
 import reward_system
 import pygame
-HIDDEN1_UNITS = 50
-HIDDEN2_UNITS = 30
+HIDDEN1_UNITS = 150
+HIDDEN2_UNITS = 160
 
 class Model:
 
@@ -18,7 +18,7 @@ class Model:
         self.action_size = action_size
         self.memory = deque(maxlen=32*30)
         self.gamma = 0.95    # discount rate
-        self.learning_rate=0.1
+        self.learning_rate=0.002
         self.running = True
         self.epsilon = 0.4  # exploration rate
         self.epsilon_min = 0.01

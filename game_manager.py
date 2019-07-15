@@ -8,9 +8,14 @@ import Simulator
 import random
 from queue import Queue
 
+FULLHD = (1920,1080)
+HD = (1280,720)
+WSVGA = (1024,768)
+VGA = (640,480)
+
 class GameManager:
 
-    def __init__(self,simulator,resolution=(1280,720)):
+    def __init__(self,simulator,resolution=VGA):
         self.initialize_pygame(resolution)
         self.simulator = simulator
         self.new_frame = False

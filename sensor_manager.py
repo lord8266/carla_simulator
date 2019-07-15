@@ -33,10 +33,10 @@ class SensorManager():
         
     def initialize_rgb_camera(self):
         camera_blueprint  = self.simulator.blueprint_library.find('sensor.camera.rgb')
-        camera_blueprint.set_attribute('image_size_x', '1280')
-        camera_blueprint.set_attribute('image_size_y', '720')
-        # camera_blueprint.set_attribute('image_size_x', '200')
-        # camera_blueprint.set_attribute('image_size_y', '200')
+        # camera_blueprint.set_attribute('image_size_x', '1280')
+        # camera_blueprint.set_attribute('image_size_y', '720')
+        camera_blueprint.set_attribute('image_size_x', '640')
+        camera_blueprint.set_attribute('image_size_y', '480')
         spawn_transform = carla.Transform(carla.Location(x=-5, z=2.3),carla.Rotation(pitch=-15))
         self.camera = self.simulator.world.spawn_actor(camera_blueprint,spawn_transform,attach_to=self.simulator.vehicle_controller.vehicle)
         

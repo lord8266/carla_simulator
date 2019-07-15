@@ -5,6 +5,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import pygame
 class RewardSystem:
 
     def __init__(self,simulator):
@@ -17,6 +18,25 @@ class RewardSystem:
         self.discrete_rewards = 0
         self.count = 0
         self.status = Simulator.Status.RUNNING
+        self.steer_buffer = []
+        self.prev = pygame.time.get_ticks()
+        self.steer_len = 6
+    def get_steer_reward(self):
+        if len(self.steer_buffer)==6:
+            curr = pygame.time.get_ticks()
+
+            if (curr-self.prev)>1000:
+                print(self.steer_buffer)
+                print(np.std(self.steer_buffer))
+                print()
+                self.prev = curr
+
+    def add_steer(self,steer):
+
+        if len(self.steer_buffer)==6:
+            self.steer_buffer = self.steer_buffer[1:] + [steer]
+        else:
+            self.steer_buffer.append(steer)
         
     def direction_penalty(self):
         penalty =0
@@ -87,9 +107,10 @@ class RewardSystem:
         # proximity_reward = self.proximity_penalty()
         # discrete = self.get_discrete_rewards()
         # # +discrete
+        # self.get_steer_reward()
         obs = self.simulator.observation
         angle = math.radians(obs[2])
-        self.curr_reward =  obs[0]*abs(math.cos(angle)) - obs[0]*abs(math.sin(angle)) - abs(obs[1])*6 
+        self.curr_reward =  obs[0]*abs(math.cos(angle)) - obs[0]*abs(math.sin(angle)) - abs(obs[1])*10 
     
         # self.curr_reward -= self.state_change_penalty()
 
