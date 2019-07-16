@@ -151,8 +151,6 @@ class SpeedControlEnvironment:
 
     
     def modify_control(self,action):
-
-      
         mod = self.actions[action]
         if mod<-100:
             mod = abs(mod+100)/100
@@ -191,18 +189,20 @@ class SpeedControlEnvironment:
         other_distance = abs(s_obs[2])
         other_delta = s_obs[3]
         if 6<=car_distance<11:
-            curr_reward += (15-car_distance)*2
+            curr_reward += (15-car_distance)*4
+        # elif car_distance<6 and car_delta = 0.0:    
+        #     curr_reward +=30
         elif car_distance<6:    
-            curr_reward -=10
+            curr_reward -=50
         else:
-            curr_reward -= car_distance*2
+            curr_reward -= car_distance*4
 
         if -0.1<car_delta<0.1 and 6<=car_distance<11:
             curr_reward += 30
         elif 0<=car_delta<0.1 and 6>car_distance:
-            curr_reward += 10
+            curr_reward += 50
         elif 0>car_delta and 6>car_distance:
-            curr_reward -= 3
+            curr_reward -= 30
         elif -0.1<car_delta<0.1:
             curr_reward += 3
         # if -0.15<car_delta<=0 and 8<=car_distance<11:
@@ -211,13 +211,13 @@ class SpeedControlEnvironment:
             curr_reward -= car_delta*10
         else:
             curr_reward += car_delta*50
-
+        
         # if other_distance<10 and other_delta<0:
             # curr_reward -= other_distance*5
 
 
 
-
+        print("reward :",curr_reward)
         return self.get_observation(),curr_reward
             
 
@@ -235,15 +235,25 @@ class SpeedControlAI:
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.model = self.build_model()
+
+        self.target_model = self.build_model()
+
         self.reward_tracker = reward_system.RewardTracker(self,50,70000,prefix='traffic_system')
         self.start =0
         self.load()
+
+        self.update_target_model()
+
         self.save_file = save_file
         self.environment = environment
         self.prev_state = None
         self.batch_size =32
         self.step =0
         self.start_episode=1
+
+    def update_target_model(self):
+        # copy weights from model to target_model
+        self.target_model.set_weights(self.model.get_weights())
         
     def build_model(self):
 
@@ -252,7 +262,7 @@ class SpeedControlAI:
         model.add(Dense(HIDDEN2_UNITS, input_dim=self.state_size, activation='tanh'))
         model.add(Dense(self.action_size, activation='softmax'))
         model.compile(loss = 'mse',optimizer = Adam(lr = self.learning_rate))
-        print("built")
+        print("built double deep q model for collision control")
         return model
 
 
@@ -273,17 +283,40 @@ class SpeedControlAI:
         act_values = self.model.predict(state)
         return np.argmax(act_values[0])
         
+    # def replay(self, batch_size):
+
+    #     minibatch = random.sample(self.memory, batch_size)
+    #     for state, action, reward, next_state, done in minibatch:
+    #         target = reward
+    #         if not done:
+    #             target = (reward + self.gamma *
+    #                       np.amax(self.model.predict(next_state)[0]))
+    #         target_f = self.model.predict(state)
+    #         target_f[0][action] = target
+    #         self.model.fit(state, target_f, epochs=1, verbose=0)
+    #     if self.episode % 30 == 0 and self.start_episode:
+    #         self.start_episode = 0
+    #         if self.epsilon > self.epsilon_min:
+    #             self.epsilon *= self.epsilon_decay
+    #         else:
+    #             self.epsilon = 0.35
+    #     elif self.episode % 30 != 0 :
+    #         self.start_episode = 1
+
     def replay(self, batch_size):
 
         minibatch = random.sample(self.memory, batch_size)
         for state, action, reward, next_state, done in minibatch:
-            target = reward
-            if not done:
-                target = (reward + self.gamma *
-                          np.amax(self.model.predict(next_state)[0]))
-            target_f = self.model.predict(state)
-            target_f[0][action] = target
-            self.model.fit(state, target_f, epochs=1, verbose=0)
+            target = self.model.predict(state)
+            if done:
+                target[0][action] = reward
+            else:
+                # a = self.model.predict(next_state)[0]
+                t = self.target_model.predict(next_state)[0]
+                target[0][action] = reward + self.gamma * np.amax(t)
+                # target[0][action] = reward + self.gamma * t[np.argmax(a)]
+            self.model.fit(state, target, epochs=1, verbose=0)
+
         if self.episode % 30 == 0 and self.start_episode:
             self.start_episode = 0
             if self.epsilon > self.epsilon_min:
@@ -292,6 +325,11 @@ class SpeedControlAI:
                 self.epsilon = 0.35
         elif self.episode % 30 != 0 :
             self.start_episode = 1
+
+
+            
+        # if self.epsilon > self.epsilon_min:
+        #     self.epsilon *= self.epsilon_decay
 
 
     def load(self):
@@ -329,7 +367,9 @@ class SpeedControlAI:
         self.total_rewards+=reward
         if not self.step%20:
             print(f"Step:{self.step}, Rewards: {self.total_rewards}")
+
         if done:
+            self.update_target_model()
             self.reward_tracker.end_episode(self.total_rewards/(self.step+1))
             print(f"\n\n\nComplete Episode {self.episode}, Total Rewards: {self.total_rewards/(self.step+1)}, Epsilon: {self.epsilon}")
             self.episode+=1

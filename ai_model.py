@@ -25,12 +25,23 @@ class Model:
         self.epsilon_decay = 0.995
         self.simulator =simulator
         self.model = self.build_model()
+
+        self.target_model = self.build_model()
+
         self.reward_tracker = reward_system.RewardTracker(self,200,70000)
         self.start =0
         self.load()
+
+        self.update_target_model()
+
         self.save_file = save_file
         self.simulator.ai_model = self
         self.prev = pygame.time.get_ticks()
+
+    def update_target_model(self):
+        # copy weights from model to target_model
+        self.target_model.set_weights(self.model.get_weights())
+
     def build_model(self):
 
         model = Sequential()
@@ -39,7 +50,7 @@ class Model:
         model.add(Dense(self.action_size, activation='softmax'))
         model.compile(loss = 'mse',optimizer = Adam(lr = self.learning_rate))
         # self.load('./save/Carla-dqn.h5')
-        print("built")
+        print("built double deep q model")
         return model
 
 
@@ -64,29 +75,44 @@ class Model:
         act_values = self.model.predict(state)
         return np.argmax(act_values[0])
         
-    def replay(self, batch_size):
+    # def replay(self, batch_size):
 
+    #     minibatch = random.sample(self.memory, batch_size)
+    #     for state, action, reward, next_state, done in minibatch:
+    #         target = reward
+    #         if not done:
+    #             target = (reward + self.gamma *
+    #                       np.amax(self.model.predict(next_state)[0]))
+    #         target_f = self.model.predict(state)
+    #         target_f[0][action] = target
+    #         self.model.fit(state, target_f, epochs=1, verbose=0)
+    #     # if self.epsilon > self.epsilon_min:
+    #     #     self.epsilon *= self.epsilon_decay
+
+    def replay(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)
         for state, action, reward, next_state, done in minibatch:
-            target = reward
-            if not done:
-                target = (reward + self.gamma *
-                          np.amax(self.model.predict(next_state)[0]))
-            target_f = self.model.predict(state)
-            target_f[0][action] = target
-            self.model.fit(state, target_f, epochs=1, verbose=0)
-        # if self.epsilon > self.epsilon_min:
-        #     self.epsilon *= self.epsilon_decay
+            target = self.model.predict(state)
+            if done:
+                target[0][action] = reward
+            else:
+                # a = self.model.predict(next_state)[0]
+                t = self.target_model.predict(next_state)[0]
+                target[0][action] = reward + self.gamma * np.amax(t)
+                # target[0][action] = reward + self.gamma * t[np.argmax(a)]
+            self.model.fit(state, target, epochs=1, verbose=0)
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
 
 
     def load(self):
         last_model,episode,epsilon =self.reward_tracker.get_previous()
         if last_model:
             self.model.load_weights(os.path.join('save','models',last_model))
-            print("Loaded",last_model)
+            print("\nLoaded",last_model)
             self.epsilon = epsilon
             self.start = episode
-            print("Last completed episode : ",self.start)
+            print("\nLast completed episode : ",self.start)
 
     def save(self, name):
         self.model.save_weights(os.path.join('save','models',name))
