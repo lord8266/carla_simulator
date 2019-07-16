@@ -159,7 +159,7 @@ class SpeedControlEnvironment:
         # self.actions = [30,20,-20,-40,-60,-120,-140]
         # self.ai = SpeedControlAI(self,input_size=4,action_size=7)
         self.actions = [50,30,-90,-130,-160,-190]
-        self.ai = SpeedControlAI(self,input_size=5,action_size=6)
+        self.ai = SpeedControlAI(self,input_size=3,action_size=6)
 
     def start(self):
         self.control = self.traffic_controller.simulator.vehicle_controller.control
@@ -215,39 +215,73 @@ class SpeedControlEnvironment:
         curr_reward = 0
         car_distance = abs(s_obs[0])
         car_delta = s_obs[1]
-        other_distance = abs(s_obs[2])
-        other_delta = s_obs[3]
-        if 6<=car_distance<11:
-            curr_reward += (15-car_distance)*4
-        # elif car_distance<6 and car_delta = 0.0:    
-        #     curr_reward +=30
-        elif car_distance<6:    
-            curr_reward -=50
-        else:
-            if car_delta<=0:
-                curr_reward += 5
-            else:
-                curr_reward -= car_distance*4
+        car_distance = round(car_distance,2)
+        car_delta = round(car_delta,2)
+        # other_distance = abs(s_obs[2])
+        # other_delta = s_obs[3]
+        # if 6<=car_distance<11:
+        #     curr_reward += (15-car_distance)*4
+        # # elif car_distance<6 and car_delta = 0.0:    
+        # #     curr_reward +=30
+        # elif car_distance<6:    
+        #     curr_reward -=50
+        # else:
+        #     if car_delta<=0:
+        #         curr_reward += 5
+        #     else:
+        #         curr_reward -= car_distance*4
 
-        if -0.1<car_delta<0.1 and 6<=car_distance<11:
-            curr_reward += 30
-        elif 0<=car_delta<0.1 and 6>car_distance:
-            curr_reward += 50
-        elif 0>car_delta and 6>car_distance:
-            curr_reward -= 30
-        elif -0.1<car_delta<0.1:
-            curr_reward += 3
-        # if -0.15<car_delta<=0 and 8<=car_distance<11:
-        #     curr_reward += (1+car_delta)*20
-        elif 0.1<car_delta:
-            curr_reward -= car_delta*10
-        else:
-            curr_reward += car_delta*50
+        # if -0.1<car_delta<0.1 and 6<=car_distance<11:
+        #     curr_reward += 30
+        # elif 0<=car_delta<0.1 and 6>car_distance:
+        #     curr_reward += 50
+        # elif 0>car_delta and 6>car_distance:
+        #     curr_reward -= 30
+        # elif -0.1<car_delta<0.1:
+        #     curr_reward += 3
+        # # if -0.15<car_delta<=0 and 8<=car_distance<11:
+        # #     curr_reward += (1+car_delta)*20
+        # elif 0.1<car_delta:
+        #     curr_reward -= car_delta*10
+        # else:
+        #     curr_reward += car_delta*50
         
         # if other_distance<10 and other_delta<0:
             # curr_reward -= other_distance*5
 
 
+        if car_distance>=11:
+            if 0<=car_delta:
+                curr_reward -= 50
+            elif 0>car_delta:
+                curr_reward += 50
+
+        elif 8<car_distance<11:
+            if -0.3<=car_delta<=0:
+                curr_reward += 45
+            elif -0.3>car_delta:
+                curr_reward += 15
+            elif 0.0<car_delta:
+                curr_reward -= 50
+
+        elif 6<=car_distance<=8:
+            if -0.1<=car_delta<=0:
+                curr_reward += 50
+            elif 0.02>car_delta>0:
+                curr_reward += 10
+            elif 0.1>car_delta>0:
+                curr_reward -= 10
+            elif 0.1<car_delta:
+                curr_reward -= 30
+            elif -0.1>car_delta:
+                curr_reward -= 60
+        
+        elif 6>car_distance:
+            if 0<=car_delta:
+                curr_reward += 30
+            elif 0>car_delta:
+                curr_reward -= 50
+            
 
         print("reward :",curr_reward)
         return self.get_observation(),curr_reward
@@ -255,7 +289,7 @@ class SpeedControlEnvironment:
 
 class SpeedControlAI:
 
-    def __init__(self,environment,input_size=5,action_size=6,save_file='save/model'):
+    def __init__(self,environment,input_size=3,action_size=6,save_file='save/model'):
 
         self.state_size = input_size
         self.action_size = action_size
@@ -398,7 +432,7 @@ class SpeedControlAI:
         action = self.act(prev_state)
         state,reward = self.environment.modify_control(action)
         if failed:
-            reward-=1500
+            reward-=1200
         # print("State:"+str(state),"Reward:" + str(reward),sep='\n',end='\n\n')
         state = np.reshape(state, [1, self.state_size])
         self.remember(prev_state, action, reward, state, done)
@@ -419,6 +453,3 @@ class SpeedControlAI:
         self.step+=1
 
         return action
-
-        
-
