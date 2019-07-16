@@ -20,7 +20,7 @@ class VehicleController:
         self.pid_controller = PIDLateralController(None)  
 
     def intialize_vehicle(self):
-        vehicle_blueprint = self.simulator.blueprint_library.find('vehicle.tesla.model3')
+        vehicle_blueprint = self.simulator.blueprint_library.find('vehicle.audi.tt')
         if vehicle_blueprint.has_attribute('color'):
             print(list(vehicle_blueprint.get_attribute('color').recommended_values))
 
@@ -79,20 +79,16 @@ class VehicleController:
     def copy_control(self,control): 
 
         VehicleController.equate_controls(self.control,control) 
+        
         angle = self.simulator.observation[2]
         self.control.steer = self.control.steer*angle/70
-        self.control.steer = np.clip(self.control.steer,-0.55,0.55)
-
-    def change_control(self,control):
-        
-        #changing controls for actor_critic model
-        self.control.steer=control[0]
-        self.control.throttle=control[1]
-        self.control.brake=control[2]
+        self.control.steer =np.clip(self.control.steer,-0.6,0.6)
          
     
     def apply_control(self):
         if self.cmp_control():
+            # print("ControlCHange:" ,self.control)
+            
             if self.simulator.key_control:
                 print("Imitate:",self.control)
             else:

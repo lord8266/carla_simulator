@@ -7,8 +7,9 @@ import os
 import random
 import reward_system
 import pygame
-HIDDEN1_UNITS = 50
-HIDDEN2_UNITS = 40
+
+HIDDEN1_UNITS = 40
+HIDDEN2_UNITS = 50
 
 class Model:
 
@@ -18,7 +19,7 @@ class Model:
         self.action_size = action_size
         self.memory = deque(maxlen=32*30)
         self.gamma = 0.95    # discount rate
-        self.learning_rate=0.0025
+        self.learning_rate=0.002
         self.running = True
         self.epsilon = 0.4  # exploration rate
         self.epsilon_min = 0.01
@@ -122,17 +123,17 @@ class Model:
 
         done = False
         batch_size = 32
-        EPISODES = 700000
+        EPISODES = 7000
         prev_rewards =0
         for e in range(self.start,EPISODES):
             state = self.simulator.reset() #change to initial state
             state = np.reshape(state, [1, self.state_size])
             self.total_rewards = 0
             
-            for time in range(300):
+            for time in range(100):
                 if not time%50:
                     pass
-                    # print(f"Step {time}, Rewards: {self.total_rewards}")
+                    print(f"Step {time}, Rewards: {self.total_rewards}")
                 # env.render()
                 action = self.act(state) # self.act(state)
                 # next_state, reward, done, _ = env.step(action)
@@ -153,7 +154,7 @@ class Model:
                     break
                 
             self.reward_tracker.end_episode(self.total_rewards)
-            # print(f"Complete Episode {e} , Epsilon: {self.epsilon}, Total Rewards: {self.total_rewards},Position: {self.simulator.navigation_system.curr_pos} / {len(self.simulator.navigation_system.ideal_route)} ")
+            print(f"Complete Episode {e} , Epsilon: {self.epsilon}, Total Rewards: {self.total_rewards},Position: {self.simulator.navigation_system.curr_pos} / {len(self.simulator.navigation_system.ideal_route)} ")
             
             if self.running==False:
                 break

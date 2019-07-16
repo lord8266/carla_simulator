@@ -17,6 +17,7 @@ import traffic_controller
 from agents.navigation import basic_agent
 import data_collector
 import ai_model
+
 class Type(Enum):
     Automatic =1
     Manual =2
@@ -98,10 +99,11 @@ class Simulator:
 
     def __init__(self,carla_server='127.0.0.1',port=2000):
         pygame.init()
+        self.initialize_game_manager()
+
         self.intitalize_carla(carla_server,port)
         self.initialize_navigation()
         self.initialize_vehicle()
-        self.initialize_game_manager()
         self.initialize_sensor_manager()
         self.initialize_control_manager()
         self.initialize_reward_system()
@@ -112,8 +114,8 @@ class Simulator:
         self.respawn_pos_times = 0
         self.key_control = False
         self.collision_vehicle =False
-        self.traffic_controller = traffic_controller.TrafficController(self,80)
-        self.traffic_controller.add_vehicles()
+        self.traffic_controller = traffic_controller.TrafficController(self,100)
+        # self.traffic_controller.add_vehicles()
         self.lane_ai = lane_ai.LaneAI(self)
         #need to change from here
         self.navigation_system.make_local_route()
@@ -122,14 +124,14 @@ class Simulator:
         # drawing_library.print_locations(self.world.debug,[i.location for i in self.navigation_system.ideal_route])
         # self.add_npc()
         self.world.tick()
-        self.world.wait_for_tick()
-        self.data_collector = data_collector.DataCollector(self)
+        # self.world.wait_for_tick()
+        # self.data_collector = data_collector.DataCollector(self)
         # self.collision_collector = data_collector.CollisionCollector(self)
         # self.free_road = ai_model.FreeRoad(self.vehicle_controller.control)
         self.last_stop = pygame.time.get_ticks()
         self.cnt = 0
         self.collide_cnt = 0
-        
+
     def temp(self):
         self.vehicle_controller.vehicle.set_transform(self.navigation_system.start)
 
@@ -137,9 +139,10 @@ class Simulator:
         self.client = carla.Client(carla_server,port)
         self.client.set_timeout(12.0)
         self.world = self.client.load_world('Town03')#self.client.get_world()
+        self.world.set_weather(carla.WeatherParameters.ClearSunset)
         # self.world = self.client.get_world()
         settings = self.world.get_settings() 
-        # settings.synchronous_mode = True # 21 22 247 248
+        settings.synchronous_mode = True # 21 22 247 248
         # settings.no_rendering_mode = True
         self.world.apply_settings(settings)
         self.map = self.world.get_map()
@@ -165,7 +168,7 @@ class Simulator:
                 blueprint.set_attribute('color', color)
             blueprint.set_attribute('role_name', 'autopilot')
             batch.append(SpawnActor(blueprint, transform).then(SetAutopilot(FutureActor, True)))
-
+        
         for response in self.client.apply_batch_sync(batch):
             print(response)
             actor_list.append(response)
@@ -227,30 +230,33 @@ class Simulator:
     def initialize_variables(self):
         self.vehicle_variables = VehicleVariables(self)
         self.vehicle_variables.start_wait(self.navigation_system.start)
- 
-    def step(self,action,model=1):
-        # self.world.tick()
+    
+    def step(self,action):
+        self.world.tick()
         # ts = self.world.wait_for_tick()
 
         self.vehicle_variables.update()
         self.game_manager.update()
         self.navigation_system.make_local_route()
-
+        if self.navigation_system.re_route_:
+            self.navigation_system.re_route_=False
+            self.navigation_system.make_local_route()
+    
         self.observation = self.get_observation()
         reward,status = self.reward_system.update_rewards()
         # self.data_collector.update()
         
         if self.type == Type.Manual:
             self.vehicle_controller.control_by_input()
-        elif model==1:
-            self.vehicle_controller.copy_control(self.control_manager.controls[action])
-        elif model==2:
-            self.vehicle_controller.change_control(action)
+        # elif model==1:
+        #     self.vehicle_controller.copy_control(self.control_manager.controls[action])
+        # elif model==2:
+        #     self.vehicle_controller.change_control(action)
 
             
         
         self.render()
-        self.traffic_controller.update()
+        
 
         curr = pygame.time.get_ticks()
         vel = self.vehicle_variables.vehicle_velocity_magnitude
@@ -260,14 +266,18 @@ class Simulator:
             
        
         
-        if (curr-self.last_stop)>5000:
+        if (curr-self.last_stop)>5000 and False: #and self.traffic_controller.override:
             self.re_level()
             self.last_stop = curr
+
         # if (traffic_light == 0) and not self.vehicle_variables.vehicle_waypoint.is_intersection:
         #     control = self.vehicle_controller.control
         #     control.throttle = 0.0
         #     control.brake = 1.0
-        # self.vehicle_controller.control_by_input(passive=True)
+
+        # self.traffic_controller.update()
+        self.vehicle_controller.control_by_input(passive=True)
+
         self.vehicle_controller.apply_control()
         
         
@@ -292,8 +302,8 @@ class Simulator:
 
         rot_offsets = self.navigation_system.get_rot_offset() # temporary
         distance_to_destination_sin, distance_to_destination_cos= self.navigation_system.get_offset_distance()
-       
-        return [distance_to_destination_sin,distance_to_destination_cos]+ list(np.clip(rot_offsets[:4],-70,70))
+        speed = self.vehicle_variables.vehicle_velocity_magnitude
+        return [speed,distance_to_destination_sin]+ list(np.clip(rot_offsets[:3],-70,70))
         
 
     def reset(self):

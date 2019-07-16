@@ -5,6 +5,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import pygame
 class RewardSystem:
 
     def __init__(self,simulator):
@@ -17,6 +18,25 @@ class RewardSystem:
         self.discrete_rewards = 0
         self.count = 0
         self.status = Simulator.Status.RUNNING
+        self.steer_buffer = []
+        self.prev = pygame.time.get_ticks()
+        self.steer_len = 6
+    def get_steer_reward(self):
+        if len(self.steer_buffer)==6:
+            curr = pygame.time.get_ticks()
+
+            if (curr-self.prev)>1000:
+                print(self.steer_buffer)
+                print(np.std(self.steer_buffer))
+                print()
+                self.prev = curr
+
+    def add_steer(self,steer):
+
+        if len(self.steer_buffer)==6:
+            self.steer_buffer = self.steer_buffer[1:] + [steer]
+        else:
+            self.steer_buffer.append(steer)
         
     def direction_penalty(self):
         penalty =0
@@ -82,17 +102,15 @@ class RewardSystem:
             
     def update_rewards(self):
         self.curr_reward =0
-        self.curr_reward+= self.checkpoint()
+        self.checkpoint()  
         # direction_reward =self.direction_penalty()
         # proximity_reward = self.proximity_penalty()
         # discrete = self.get_discrete_rewards()
         # # +discrete
+        # self.get_steer_reward()
         obs = self.simulator.observation
-        self.curr_reward -= abs(obs[0])*20
-        self.curr_reward -= obs[1]*10
-        self.curr_reward -= abs(obs[2])*3
-        if abs(obs[2])<10:
-            self.curr_reward += self.simulator.vehicle_variables.vehicle_velocity_magnitude*4
+        angle = math.radians(obs[2])
+        self.curr_reward =  obs[0]*abs(math.cos(angle))
         # self.curr_reward -= self.state_change_penalty()
 
         # print(f"CheckPoint Reward: {checkpoint_reward}, Direction Reward: {direction_reward}, Proximity Reward: {proximity_reward}, Forward Reward: {forward_reward}\n")

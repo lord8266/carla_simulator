@@ -8,9 +8,14 @@ import Simulator
 import random
 from queue import Queue
 
+FULLHD = (1920,1080)
+HD = (1280,720)
+WSVGA = (1024,768)
+VGA = (640,480)
+
 class GameManager:
 
-    def __init__(self,simulator,resolution=(640,480)):
+    def __init__(self,simulator,resolution=VGA):
         self.initialize_pygame(resolution)
         self.simulator = simulator
         self.new_frame = False
@@ -26,7 +31,15 @@ class GameManager:
         self.pixel_buffer  =PixelBuffer(simulator)
         self.saver_pixels = None
         self.started = False
-        
+        self.wait_time()
+
+    def wait_time(self):
+        stop = True
+        while stop:
+            for event in pygame.event.get():
+
+                if event.type==pygame.KEYDOWN:
+                    stop=False
     def initialize_pygame(self,resolution):
         pygame.init()
         self.display = pygame.display.set_mode(resolution,pygame.HWSURFACE | pygame.DOUBLEBUF)
@@ -96,7 +109,8 @@ class GameManager:
                     raise Exception()
                 
                 if event.key==pygame.K_l:
-                    self.simulator.lane_ai.lane_changer.check_new_lane(force=True)
+                    pass
+                    self.simulator.traffic_controller.collision_control.try_lane_change(force=True)
                     
 
                 if event.key==pygame.K_r:
