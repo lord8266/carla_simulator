@@ -100,7 +100,9 @@ class CollisionControl:
                 if not change_lane:
                     self.enable_AI(closest_obstacle)
 
-    
+    def emergency_stop(self):
+
+
     def enable_AI(self,closest_obstacle):
         if self.state!=ControlState.AI:
             self.state = ControlState.AI
@@ -129,7 +131,7 @@ class SpeedControlEnvironment:
         # reward negative distance
         # self.actions = [30,20,-20,-40,-60,-120,-140]
         # self.ai = SpeedControlAI(self,input_size=4,action_size=7)
-        self.actions = [30,-70,-100,-130,-160,-190]
+        self.actions = [50,30,-90,-130,-160,-190]
         self.ai = SpeedControlAI(self,input_size=5,action_size=6)
 
     def start(self):
@@ -195,7 +197,10 @@ class SpeedControlEnvironment:
         elif car_distance<6:    
             curr_reward -=50
         else:
-            curr_reward -= car_distance*4
+            if car_delta<=0:
+                curr_reward += 5
+            else:
+                curr_reward -= car_distance*4
 
         if -0.1<car_delta<0.1 and 6<=car_distance<11:
             curr_reward += 30
@@ -272,6 +277,17 @@ class SpeedControlAI:
     def act(self, state):
         if random.random() <= self.epsilon:  
             return random.randrange(self.action_size) 
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_UP]:
+            n = random.randint(0,1)
+            return n
+        if keys[pygame.K_DOWN]:
+            n = random.randint(3,5)
+            return n
+        # if self.action_choice != -1:
+        #     x = self.action_choice
+        #     self.action_choice = -1
+        #     return x
         act_values = self.model.predict(state)
         return np.argmax(act_values[0]) 
         # print(state)

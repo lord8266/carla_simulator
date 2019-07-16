@@ -342,34 +342,34 @@ class LaneChanger:
     def check_new_lane(self,min_angle=150,force=False):
 
         done =False
-        if self.state==State.RUNNING:
-            next_waypoint = self.lane_ai.request_new_lane()
+        # if self.state==State.RUNNING:
+        next_waypoint = self.lane_ai.request_new_lane()
 
-            if next_waypoint:
-                wp = self.lane_ai.simulator.vehicle_variables.vehicle_waypoint
-                next_waypoint_lane_id = next_waypoint.lane_id
+        if next_waypoint:
+            wp = self.lane_ai.simulator.vehicle_variables.vehicle_waypoint
+            next_waypoint_lane_id = next_waypoint.lane_id
 
-                if force:
-                    done = True
+            if force:
+                done = True
+            else:
+                closest_data = self.lane_ai.lane_closest
+                distance_to_same_lane_obstacle = closest_data[wp.lane_id].distance
+
+                if next_waypoint_lane_id in closest_data:
+                    distance_other_lane_obstacle = closest_data[next_waypoint_lane_id].distance
+
+                    if distance_to_same_lane_obstacle<distance_other_lane_obstacle:
+                        print("Same",distance_to_same_lane_obstacle,", other",distance_other_lane_obstacle)
+                        done  =True
                 else:
-                    closest_data = self.lane_ai.lane_closest
-                    distance_to_same_lane_obstacle = closest_data[wp.lane_id].distance
+                    done = True
 
-                    if next_waypoint_lane_id in closest_data:
-                        distance_other_lane_obstacle = closest_data[next_waypoint_lane_id].distance
-
-                        if distance_to_same_lane_obstacle<distance_other_lane_obstacle:
-                            print("Same",distance_to_same_lane_obstacle,", other",distance_other_lane_obstacle)
-                            done  =True
-                    else:
-                        done = True
-
-                if done:
-                    next_waypoint= self.lane_ai.check_waypoint_angle(next_waypoint,self.lane_ai.simulator.vehicle_variables.vehicle_transform,min_angle)
-                    self.lane_ai.simulator.navigation_system.add_event(next_waypoint)
-                    self.target_lane_id = next_waypoint_lane_id
-                    if not force:
-                        self.state = State.LANE_CHANGE
+            if done:
+                next_waypoint= self.lane_ai.check_waypoint_angle(next_waypoint,self.lane_ai.simulator.vehicle_variables.vehicle_transform,min_angle)
+                self.lane_ai.simulator.navigation_system.add_event(next_waypoint)
+                self.target_lane_id = next_waypoint_lane_id
+                # if not force:
+                #     self.state = State.LANE_CHANGE
 
            
        

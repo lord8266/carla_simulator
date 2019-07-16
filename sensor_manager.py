@@ -45,7 +45,7 @@ class SensorManager():
         semantic_blueprint.set_attribute('image_size_y', '200')
         spawn_transform = carla.Transform(carla.Location(x=2, z=1),carla.Rotation())
         self.semantic_camera = self.simulator.world.spawn_actor(semantic_blueprint,spawn_transform,attach_to=self.simulator.vehicle_controller.vehicle)
-        
+    
 
     def initialize_collision_sensor(self):
         collision_sensor_blueprint = self.simulator.blueprint_library.find('sensor.other.collision')
