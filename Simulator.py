@@ -114,8 +114,8 @@ class Simulator:
         self.respawn_pos_times = 0
         self.key_control = False
         self.collision_vehicle =False
-        self.traffic_controller = traffic_controller.TrafficController(self,100)
-        # self.traffic_controller.add_vehicles()
+        self.traffic_controller = traffic_controller.TrafficController(self,150)
+        self.traffic_controller.add_vehicles()
         self.lane_ai = lane_ai.LaneAI(self)
         #need to change from here
         self.navigation_system.make_local_route()
@@ -139,7 +139,7 @@ class Simulator:
         self.client = carla.Client(carla_server,port)
         self.client.set_timeout(12.0)
         self.world = self.client.load_world('Town03')#self.client.get_world()
-        self.world.set_weather(carla.WeatherParameters.ClearSunset)
+        # self.world.set_weather(carla.WeatherParameters.ClearSunset)
         # self.world = self.client.get_world()
         settings = self.world.get_settings() 
         settings.synchronous_mode = True # 21 22 247 248
@@ -248,8 +248,8 @@ class Simulator:
         
         if self.type == Type.Manual:
             self.vehicle_controller.control_by_input()
-        # elif model==1:
-        #     self.vehicle_controller.copy_control(self.control_manager.controls[action])
+        else:
+            self.vehicle_controller.copy_control(self.control_manager.controls[action])
         # elif model==2:
         #     self.vehicle_controller.change_control(action)
 
@@ -266,7 +266,7 @@ class Simulator:
             
        
         
-        if (curr-self.last_stop)>5000 and False: #and self.traffic_controller.override:
+        if (curr-self.last_stop)>5000: #and self.traffic_controller.override:
             self.re_level()
             self.last_stop = curr
 
@@ -275,8 +275,8 @@ class Simulator:
         #     control.throttle = 0.0
         #     control.brake = 1.0
 
-        # self.traffic_controller.update()
-        self.vehicle_controller.control_by_input(passive=True)
+        self.traffic_controller.update()
+        # self.vehicle_controller.control_by_input(passive=True)
 
         self.vehicle_controller.apply_control()
         

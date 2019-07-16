@@ -14,8 +14,8 @@ def get_action():
     max_ = len(simulator.control_manager.controls)
     return 2#np.random.randint(0,max_)
 
-# simulator = Simulator.Simulator('172.16.175.136')
-simulator = Simulator.Simulator()
+simulator = Simulator.Simulator('172.16.175.136')
+# simulator = Simulator.Simulator()
 
 
 model = ai_model.Model(simulator,5,len(simulator.control_manager.controls))
@@ -27,27 +27,27 @@ curr_reward =0
 clock = pygame.time.Clock()
 
 
-# while running:
-#     # clock.tick_busy_loop(60)
-#     action =model.predict(observation)
-#     curr = pygame.time.get_ticks()
-#     observation,reward,done,_ = simulator.step(action)
-#     curr_reward+=reward
-#     if (curr-prev)>1000/200:
-#         print("Reward: ",simulator.reward_system.curr_reward)
-#         print(observation, end='\n\n')
-#         # print(simulator.vehicle_controller.control)
-#         # print(simulator.vehicle_variables.vehicle_location,simulator.navigation_system.start.location)
-#         prev =curr
-#     # print(1000/(curr-prev))
-#     # prev = curr
-#     if done:
-#         # print("here")
-#         simulator.reset()
-#         continue
+while running:
+    clock.tick_busy_loop(30)
+    action =model.predict(observation)
+    curr = pygame.time.get_ticks()
+    observation,reward,done,_ = simulator.step(action)
+    curr_reward+=reward
+    if (curr-prev)>1000/200:
+        print("Reward: ",simulator.reward_system.curr_reward)
+        print(observation, end='\n\n')
+        # print(simulator.vehicle_controller.control)
+        # print(simulator.vehicle_variables.vehicle_location,simulator.navigation_system.start.location)
+        prev =curr
+    # print(1000/(curr-prev))
+    # prev = curr
+    if done:
+        # print("here")
+        simulator.reset()
+        continue
 
-#     simulator.render()
-#     running = simulator.running
+    simulator.render()
+    running = simulator.running
 
 
 
