@@ -164,7 +164,7 @@ class VehicleController:
         VehicleController.set_control(self.prev_control)
         id_ =self.vehicle.id
         vel = self.simulator.vehicle_variables.vehicle_velocity
-        self.simulator.client.apply_batch([carla.command.ApplyVelocity(id_, vel/10),
+        self.simulator.client.apply_batch([carla.command.ApplyVelocity(id_, vel/3),
         carla.command.ApplyAngularVelocity(id_, carla.Vector3D()) ])
 
 

@@ -100,7 +100,22 @@ class TrafficController:
                     self.update_lane_obstacles(this_obs)
         
         self.rem_obstacles(found_ids)
-    
+
+    def update_local_front(self,max_distance=13,max_angle=60):
+        self.local_front = {}
+
+        for i,o in self.obstacles.items():
+            if o.distance<max_distance and o.angle<max_angle:
+                #emergency
+                if o.distance<6 and o.angle<5.6 and o.delta_d<=0:
+                    control = self.simulator.vehicle_controller.control
+                    control.throttle = 0.0
+                    control.steer = 0.0
+                    control.brake = 1.0
+                    self.simulator.vehicle_controller.destroy_movement()
+                self.local_front[i] =o
+        
+
     def update_lane_obstacles(self,this_obs):
 
         lane_side = self.simulator.vehicle_variables.lane_id>0
@@ -112,7 +127,7 @@ class TrafficController:
             if this_lane_side==lane_side:
                 if this_obs.lane_id not in self.lane_obstacles:
                     self.lane_obstacles[this_obs.lane_id]  = this_obs
-                
+
 
     def get_far_away(self,distance=15):
         spawn_points = self.simulator.navigation_system.spawn_points
@@ -227,7 +242,7 @@ class TrafficController:
             data_next = 100,0
             s+='DataFuture: None\n'
 
-        self.ai_observation = data_same+data_next+(self.simulator.vehicle_variables.vehicle_velocity_magnitude*10,)
+        self.ai_observation = data_same+(self.simulator.vehicle_variables.vehicle_velocity_magnitude*10,)
         # if same_lane:
         #     if same_lane.distance<20 and self.ai_observation[0]<self.ai_observation[2]:
         #         self.simulator.lane_ai.lane_changer.check_new_lane(force=True)
@@ -282,8 +297,10 @@ class TrafficController:
         # print("call update")
         # curr =pygame.time.get_ticks()
         self.update_distances()
+
         self.surrounding_data = self.predict_future()
-        # self.print_obstacles()
+        # self.update_local_front()
+
 
         
 
