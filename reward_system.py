@@ -109,8 +109,11 @@ class RewardSystem:
         # # +discrete
         # self.get_steer_reward()
         obs = self.simulator.observation
-        angle = math.radians(obs[2])
-        self.curr_reward =  obs[0]*abs(math.cos(angle))
+        self.curr_reward -= abs(obs[0])*20
+        self.curr_reward -= obs[1]*10
+        self.curr_reward -= abs(obs[2])*3
+        if abs(obs[2])<10:
+            self.curr_reward += self.simulator.vehicle_variables.vehicle_velocity_magnitude*4
         # self.curr_reward -= self.state_change_penalty()
 
         # print(f"CheckPoint Reward: {checkpoint_reward}, Direction Reward: {direction_reward}, Proximity Reward: {proximity_reward}, Forward Reward: {forward_reward}\n")

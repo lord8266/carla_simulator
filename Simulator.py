@@ -302,9 +302,8 @@ class Simulator:
 
         rot_offsets = self.navigation_system.get_rot_offset() # temporary
         distance_to_destination_sin, distance_to_destination_cos= self.navigation_system.get_offset_distance()
-        speed = self.vehicle_variables.vehicle_velocity_magnitude
-        return [speed,distance_to_destination_sin]+ list(np.clip(rot_offsets[:3],-70,70))
-        
+       
+        return [distance_to_destination_sin,distance_to_destination_cos]+ list(np.clip(rot_offsets[:4],-70,70))
 
     def reset(self):
         status =self.reward_system.status

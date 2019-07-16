@@ -8,8 +8,8 @@ import random
 import reward_system
 import pygame
 
-HIDDEN1_UNITS = 40
-HIDDEN2_UNITS = 50
+HIDDEN1_UNITS = 50
+HIDDEN2_UNITS = 40
 
 class Model:
 
