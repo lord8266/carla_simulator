@@ -159,14 +159,14 @@ class TrafficController:
             return None
 
     def enableAI(self):
-        pass
-        # if self.ai_enabled:
-        #     self.env.run()
+        # pass
+        if self.ai_enabled:
+            self.env.run()
             
-        # else:
-        #     print("Enable AI")
-        #     self.ai_enabled =True
-        #     self.env.start()
+        else:
+            print("Enable AI")
+            self.ai_enabled =True
+            self.env.start()
 
     def disableAI(self,failed=False):
         if self.ai_enabled:
@@ -240,7 +240,7 @@ class TrafficController:
             data_next = 100,0
             s+='DataFuture: None\n'
 
-        self.ai_observation = data_same+data_next+(self.simulator.vehicle_variables.vehicle_velocity_magnitude*10,)
+        self.ai_observation = data_same+(self.simulator.vehicle_variables.vehicle_velocity_magnitude*10,)
         # if same_lane:
         #     if same_lane.distance<20 and self.ai_observation[0]<self.ai_observation[2]:
         #         self.simulator.lane_ai.lane_changer.check_new_lane(force=True)
@@ -295,7 +295,7 @@ class TrafficController:
         self.update_distances()
         self.surrounding_data = self.predict_future()
         self.collision_control.update()
-        self.print_obstacles()
+        # self.print_obstacles()
 
         
 

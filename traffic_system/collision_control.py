@@ -40,15 +40,15 @@ class CollisionControl:
         self.curr_lane = self.traffic_controller.simulator.vehicle_variables.lane_id
 
     def update(self):
+        pass
+        # if self.state==LaneState.SAME_LANE:
+        #     self.update_same_lane()
+        # else:
+        #     # self.update_same_lane(0)
+        #     self.update_target_lane()
 
-        if self.state==LaneState.SAME_LANE:
-            self.update_same_lane()
-        else:
-            # self.update_same_lane(0)
-            self.update_target_lane()
-
-        self.update_lane_change()
-        self.try_lane_change()
+        # self.update_lane_change()
+        # self.try_lane_change()
 
     def update_same_lane(self,type_=1):
 
@@ -336,8 +336,6 @@ class SpeedControlAI:
         self.memory.append((state, action, reward, next_state, done))
 
     def act(self, state):
-        if random.random() <= self.epsilon:  
-            return random.randrange(self.action_size) 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP]:
             n = random.randint(0,1)
@@ -345,6 +343,8 @@ class SpeedControlAI:
         if keys[pygame.K_DOWN]:
             n = random.randint(3,5)
             return n
+        if random.random() <= self.epsilon:  
+            return random.randrange(self.action_size) 
         # if self.action_choice != -1:
         #     x = self.action_choice
         #     self.action_choice = -1

@@ -34,8 +34,8 @@ while running:
     observation,reward,done,_ = simulator.step(action)
     curr_reward+=reward
     if (curr-prev)>1000/200:
-        print("Reward: ",simulator.reward_system.curr_reward)
-        print(observation, end='\n\n')
+        # print("Reward: ",simulator.reward_system.curr_reward)
+        # print(observation, end='\n\n')
         # print(simulator.vehicle_controller.control)
         # print(simulator.vehicle_variables.vehicle_location,simulator.navigation_system.start.location)
         prev =curr
