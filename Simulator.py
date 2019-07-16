@@ -168,7 +168,7 @@ class Simulator:
                 blueprint.set_attribute('color', color)
             blueprint.set_attribute('role_name', 'autopilot')
             batch.append(SpawnActor(blueprint, transform).then(SetAutopilot(FutureActor, True)))
-
+        
         for response in self.client.apply_batch_sync(batch):
             print(response)
             actor_list.append(response)
