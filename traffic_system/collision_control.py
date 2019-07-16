@@ -309,8 +309,6 @@ class SpeedControlAI:
         self.memory.append((state, action, reward, next_state, done))
 
     def act(self, state):
-        if random.random() <= self.epsilon:  
-            return random.randrange(self.action_size) 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP]:
             n = random.randint(0,1)
@@ -318,6 +316,8 @@ class SpeedControlAI:
         if keys[pygame.K_DOWN]:
             n = random.randint(3,5)
             return n
+        if random.random() <= self.epsilon:  
+            return random.randrange(self.action_size) 
         # if self.action_choice != -1:
         #     x = self.action_choice
         #     self.action_choice = -1
