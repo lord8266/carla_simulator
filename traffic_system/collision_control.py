@@ -179,41 +179,92 @@ class SpeedControlEnvironment:
         car_delta = s_obs[1]
 
         if car_distance>=11:
-            if 0.02<=car_delta:
-                curr_reward -= 50
-            elif 0.02>car_delta:
-                curr_reward += 50
+            # if 0.02<=car_delta:
+            #     curr_reward -= 50
+            # elif 0.02>car_delta:
+            #     curr_reward += 50
+            if car_delta<-0.5:
+                curr_reward += 50 
+            elif -0.5<=car_delta<-0.2:
+                curr_reward += 100
+            elif -0.2<=car_delta<-0.04:
+                curr_reward += 25
+            elif -0.04<=car_delta<0.2:
+                curr_reward -= 100
+            elif 0.1<=car_delta:
+                curr_reward -= 100
 
         elif 8<car_distance<11:
-            if -0.3<=car_delta<=0.05:
-                curr_reward += 45
-            elif -0.3>car_delta:
-                curr_reward += 15
-            elif 0.05<car_delta:
-                curr_reward -= 50
+            # if -0.2<=car_delta<=0.05:
+            #     curr_reward += 75
+            # elif -0.2>car_delta>-0.4:
+            #     curr_reward += 25
+            # elif -0.4>=car_delta:
+            #     curr_reward -= 75
+            # elif 0.05<car_delta:
+            #     curr_reward -= 75
+            if car_delta<-0.5:
+                curr_reward -= 200 
+            elif -0.5<=car_delta<-0.2:
+                curr_reward += 50
+            elif -0.2<=car_delta<-0.04:
+                curr_reward += 100
+            elif -0.04<=car_delta<0.2:
+                curr_reward -= 100
+            elif 0.1<=car_delta:
+                curr_reward -= 100
 
         elif 6<=car_distance<=8:
-            if -0.1<=car_delta<-0.02:
-                curr_reward += 10
-            elif -0.02<=car_delta<=0:
+            # if -0.5<=car_delta<-0.2:
+            #     curr_reward -= 10
+            # elif -0.02<=car_delta<=0:
+            #     curr_reward += 150 
+            # elif -0.02<=car_delta<=0:
+            #     curr_reward += 150
+            # elif 0.02>car_delta>0:
+            #     curr_reward += 100
+            # elif 0.1>car_delta>0.02:
+            #     curr_reward -= 50
+            # elif 0.1<car_delta:
+            #     curr_reward -= 100
+            # elif -0.1>car_delta:
+            #     curr_reward -= 150
+            if car_delta<-0.5:
+                curr_reward -= 200 
+            elif -0.5<=car_delta<-0.2:
+                curr_reward -= 100
+            elif -0.2<=car_delta<-0.08:
                 curr_reward += 50
-            elif 0.02>car_delta>0:
-                curr_reward += 10
-            elif 0.1>car_delta>0:
-                curr_reward -= 10
-            elif 0.1<car_delta:
-                curr_reward -= 30
-            elif -0.1>car_delta:
-                curr_reward -= 60
+            elif -0.08<=car_delta<0.08:
+                curr_reward += 150
+            elif 0.08<=car_delta<0.2:
+                curr_reward -= 50
+            elif 0.1<=car_delta:
+                curr_reward -= 100
         
         elif 6>car_distance:
-            if -0.02<car_delta:
-                curr_reward += 30
-            elif -0.02>=car_delta:
-                curr_reward -= 50
-        if car_distance == 100:
-            curr_reward = 0
-        print("reward :",curr_reward, "obs :",s_obs, end="")
+            # if -0.02<car_delta<=0.02:
+            #     curr_reward += 75
+            # elif 0.02<car_delta:
+            #     curr_reward -= 10
+            # elif -0.02>=car_delta:
+            #     curr_reward -= 25
+            if car_delta<-0.5:
+                curr_reward -= 200 
+            elif -0.5<=car_delta<-0.2:
+                curr_reward -= 200
+            elif -0.2<=car_delta<-0.02:
+                curr_reward -= 100
+            elif -0.02<=car_delta<0.04:
+                curr_reward += 150
+            elif 0.04<=car_delta<0.2:
+                curr_reward -= 100
+            elif 0.1<=car_delta:
+                curr_reward -= 100
+
+        # if car_distance == 100:
+        #     curr_reward = 0
+        print("reward :","%4.2d"%(curr_reward), "\tobs :",s_obs, end="")
         return self.get_observation(),curr_reward
             
 
@@ -285,6 +336,7 @@ class SpeedControlAI:
                 return 5
             else:
                 return random.randint(3,5)
+
 
         if True:#random.random() <= self.epsilon:
             # return random.randint(0,5)
@@ -444,7 +496,7 @@ class SpeedControlAI:
         print("action : ",action, end="   ")
         state,reward = self.environment.modify_control(action)
         if failed:
-            reward-=10000
+            reward-=1500
         # print("State:"+str(state),"Reward:" + str(reward),sep='\n',end='\n\n')
         print()
         state = np.reshape(state, [1, self.state_size])
