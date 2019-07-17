@@ -1,3 +1,4 @@
+import collision_data_collector
 
 import drawing_library
 import carla
@@ -246,7 +247,8 @@ class SpeedControlAI:
         self.batch_size =32
         self.step =0
         self.start_episode=1
-
+        self.collector = collision_data_collector.DataCollector(environment.traffic_controller.simulator)
+        self.prev_data = 20
     def update_target_model(self):
         # copy weights from model to target_model
         self.target_model.set_weights(self.model.get_weights())
@@ -264,6 +266,13 @@ class SpeedControlAI:
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
+
+    def collect_data(self,state,target):
+        if state[0][0]!=100 and state[0][0]!=self.prev_data:
+            self.prev_data = state[0][0]
+            self.collector.save_image(state,target)
+        else:
+            print("Not Saving")
 
     def act(self, state):
         keys = pygame.key.get_pressed()
@@ -442,6 +451,7 @@ class SpeedControlAI:
         prev_state = self.prev_state
         action = self.act(prev_state)
         print("action : ",action, end="   ")
+        self.collect_data(prev_state,action)
         state,reward = self.environment.modify_control(action)
         if failed:
             reward-=10000

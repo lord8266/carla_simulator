@@ -124,20 +124,18 @@ class GameManager:
         self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
         self.new_frame =True
     
+    def crop_image(self,array):
+        
     def semantic_callback(self,image):
         image.convert(carla.ColorConverter.CityScapesPalette)
         array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
         array = np.reshape(array, (image.height, image.width, 4))
         array = array[:, :, :3]
         array = array[:, :, ::-1]
-        array = array.reshape(-1,3)
         self.array =array
 
-        array = self.transform_array2(array)
-        array  = np.reshape(array, (image.height//2, image.width, 3))
-    
-        self.surface2 = pygame.surfarray.make_surface(array.swapaxes(0, 1))
-        self.new_frame2 =True
+        self.crop_image(array)
+       
         # self.color_density.add_density(self.array)
         self.started = True
         # print(self.color_density.get_offset())

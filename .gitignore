@@ -3,3 +3,4 @@ route_planner.py
 waypoint.py
 *.txt
 images
+collision_data
