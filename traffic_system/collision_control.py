@@ -364,7 +364,7 @@ class SpeedControlAI:
                 return random.randint(3,5)
 
 
-        if 0.4 <= self.epsilon:
+        if True:#random.random() <= self.epsilon:
             # return random.randint(0,5)
             s_obs = state[0]
             car_distance = abs(s_obs[0])
@@ -390,7 +390,7 @@ class SpeedControlAI:
             
             elif 8<car_distance<11:
                 if car_speed > 6:
-                    return 4
+                    return 3
                 if car_delta<-0.5:
                     return 4
                 elif -0.5<=car_delta<-0.3:
@@ -488,7 +488,7 @@ class SpeedControlAI:
             if self.epsilon > self.epsilon_min:
                 self.epsilon *= self.epsilon_decay
             else:
-                self.epsilon = 0.8
+                self.epsilon = 0.15
         elif self.episode % 20 != 0 :
             self.start_episode = 1
 
