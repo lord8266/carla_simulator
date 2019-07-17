@@ -318,8 +318,8 @@ class SpeedControlAI:
         if keys[pygame.K_DOWN]:
             n = random.randint(3,5)
             return n
-        if random.random() <= self.epsilon:  
-            return random.randrange(self.action_size) 
+        # if random.random() <= self.epsilon:  
+        #     return random.randrange(self.action_size) 
         # if self.action_choice != -1:
         #     x = self.action_choice
         #     self.action_choice = -1
