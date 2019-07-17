@@ -290,7 +290,7 @@ class SpeedControlAI:
 
         self.reward_tracker = reward_system.RewardTracker(self,50,70000,prefix='traffic_system')
         self.start =0
-        # self.load()
+        self.load()
 
         self.update_target_model()
 
@@ -301,7 +301,7 @@ class SpeedControlAI:
         self.step =0
         self.start_episode=1
         self.collector = collision_data_collector.DataCollector(environment.traffic_controller.simulator,'collision_data',500,100,100)
-        self.image_collector = collision_data_collector.DataCollector(environment.traffic_controller.simulator,'collision_images',600,25,100)
+        self.image_collector = collision_data_collector.DataCollector(environment.traffic_controller.simulator,'collision_images',600,25,10)
         self.prev_data = 20
 
         self.prev_time = pygame.time.get_ticks()
@@ -326,14 +326,17 @@ class SpeedControlAI:
 
     def collect_data(self,state,target):
 
-        curr =pygame.time.get_ticks()
-
-        if (curr-self.prev_time)>300:
-            image = self.environment.traffic_controller.simulator.game_manager.array
-            self.image_collector.save_image(image,target)
-            self.prev_time = curr
 
         if state[0][0]!=100 and state[0][0]!=self.prev_data:
+            
+            curr =pygame.time.get_ticks()
+
+
+
+            if (curr-self.prev_time)>300:
+                image = self.environment.traffic_controller.simulator.game_manager.array
+                self.image_collector.save_image(image,target)
+                self.prev_time = curr
             self.prev_data = state[0][0]
             image = self.environment.traffic_controller.simulator.game_manager.array
 
