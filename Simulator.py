@@ -112,7 +112,7 @@ class Simulator:
         self.respawn_pos_times = 0
         self.key_control = False
         self.collision_vehicle =False
-        self.traffic_controller = traffic_controller.TrafficController(self,130)
+        self.traffic_controller = traffic_controller.TrafficController(self,160)
         self.traffic_controller.add_vehicles()
         self.lane_ai = lane_ai.LaneAI(self)
         #need to change from here
@@ -123,7 +123,7 @@ class Simulator:
         # self.add_npc()
         self.world.tick()
         self.world.wait_for_tick()
-        self.data_collector = data_collector.DataCollector(self)
+        # self.data_collector = data_collector.DataCollector(self)
         # self.collision_collector = data_collector.CollisionCollector(self)
         # self.free_road = ai_model.FreeRoad(self.vehicle_controller.control)
         self.last_stop = pygame.time.get_ticks()

@@ -247,8 +247,12 @@ class SpeedControlAI:
         self.batch_size =32
         self.step =0
         self.start_episode=1
-        self.collector = collision_data_collector.DataCollector(environment.traffic_controller.simulator)
+        self.collector = collision_data_collector.DataCollector(environment.traffic_controller.simulator,'collision_data',500,100,100)
+        self.image_collector = collision_data_collector.DataCollector(environment.traffic_controller.simulator,'collision_images',600,25,100)
         self.prev_data = 20
+
+        self.prev_time = pygame.time.get_ticks()
+
     def update_target_model(self):
         # copy weights from model to target_model
         self.target_model.set_weights(self.model.get_weights())
@@ -268,9 +272,20 @@ class SpeedControlAI:
         self.memory.append((state, action, reward, next_state, done))
 
     def collect_data(self,state,target):
+
+        curr =pygame.time.get_ticks()
+
+        if (curr-self.prev_time)>300:
+            image = self.environment.traffic_controller.simulator.game_manager.array
+            self.image_collector.save_image(image,target)
+            self.prev_time = curr
+
         if state[0][0]!=100 and state[0][0]!=self.prev_data:
             self.prev_data = state[0][0]
+            image = self.environment.traffic_controller.simulator.game_manager.array
+
             self.collector.save_image(state,target)
+            
         else:
             print("Not Saving")
 
