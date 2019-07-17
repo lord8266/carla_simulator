@@ -238,7 +238,9 @@ class SpeedControlEnvironment:
                 curr_reward -= 50
 
         elif 6<=car_distance<=8:
-            if -0.1<=car_delta<=0:
+            if -0.1<=car_delta<-0.02:
+                curr_reward += 10
+            elif -0.02<=car_delta<=0:
                 curr_reward += 50
             elif 0.02>car_delta>0:
                 curr_reward += 10
