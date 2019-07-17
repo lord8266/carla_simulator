@@ -290,7 +290,7 @@ class SpeedControlAI:
 
         self.reward_tracker = reward_system.RewardTracker(self,50,70000,prefix='traffic_system')
         self.start =0
-        self.load()
+        # self.load()
 
         self.update_target_model()
 
