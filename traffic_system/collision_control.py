@@ -358,22 +358,22 @@ class SpeedControlAI:
                 elif -0.5<=car_delta<-0.2:
                     return 1
                 elif -0.2<=car_delta<0.05:
-                    return 1
+                    return 0
                 elif 0.05<=car_delta<0.5:
                     return 0
                 elif 0.5<=car_delta:
                     return 0
             
             elif 8<car_distance<11:
-                if car_speed > 6.5:
+                if car_speed > 6:
                     return 3
                 if car_delta<-0.5:
                     return 4
                 elif -0.5<=car_delta<-0.3:
                     return 3
-                elif -0.3<=car_delta<-0.1:
+                elif -0.3<=car_delta<-0.2:
                     return 2
-                elif -0.1<=car_delta<0.05:
+                elif -0.2<=car_delta<0.05:
                     return 2
                 elif 0.05<=car_delta<0.5:
                     return 1
