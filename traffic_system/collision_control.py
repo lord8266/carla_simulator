@@ -207,9 +207,11 @@ class SpeedControlEnvironment:
                 curr_reward -= 200 
             elif -0.5<=car_delta<-0.2:
                 curr_reward += 50
-            elif -0.2<=car_delta<-0.04:
+            elif -0.2<=car_delta<-0.05:
                 curr_reward += 100
-            elif -0.04<=car_delta<0.2:
+            elif -0.05<=car_delta<0.05 and s_obs[2]>4.5:
+                curr_reward += 50
+            elif -0.05<=car_delta<0.2:
                 curr_reward -= 100
             elif 0.1<=car_delta:
                 curr_reward -= 100
