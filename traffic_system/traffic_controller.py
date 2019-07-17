@@ -173,13 +173,13 @@ class TrafficController:
             self.env.run()
             
         else:
-            print("Enable AI")
+            # print("Enable AI")
             self.ai_enabled =True
             self.env.start()
 
     def disableAI(self,failed=False):
         if self.ai_enabled:
-            print("Disable AI")
+            # print("Disable AI")
             self.env.stop(failed)
             self.ai_enabled = False
         
@@ -241,8 +241,12 @@ class TrafficController:
         else:
             data_next = 100,0
             s+='DataFuture: None\n'
+        rounded = [0,0]
+        rounded[0] = round(data_same[0],2)
+        rounded[1] = round(data_same[1],2)
+        data = (rounded[0],rounded[1])
 
-        self.ai_observation = data_same+(self.simulator.vehicle_variables.vehicle_velocity_magnitude*10,)
+        self.ai_observation = data+(self.simulator.vehicle_variables.vehicle_velocity_magnitude,)
         # if same_lane:
         #     if same_lane.distance<20 and self.ai_observation[0]<self.ai_observation[2]:
         #         self.simulator.lane_ai.lane_changer.check_new_lane(force=True)

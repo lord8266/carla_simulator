@@ -112,7 +112,7 @@ class Simulator:
         self.respawn_pos_times = 0
         self.key_control = False
         self.collision_vehicle =False
-        self.traffic_controller = traffic_controller.TrafficController(self,80)
+        self.traffic_controller = traffic_controller.TrafficController(self,130)
         self.traffic_controller.add_vehicles()
         self.lane_ai = lane_ai.LaneAI(self)
         #need to change from here
