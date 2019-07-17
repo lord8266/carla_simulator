@@ -270,7 +270,10 @@ class Simulator:
         #     control.brake = 1.0
         # self.vehicle_controller.control_by_input(passive=True)
 
+        w = self.vehicle_variables.vehicle_waypoint
         
+        if w.is_intersection and self.vehicle_variables.vehicle_velocity_magnitude > 6 :
+            self.vehicle_controller.control.throttle *= 0.6
 
         self.vehicle_controller.apply_control()
         
