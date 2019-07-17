@@ -7,6 +7,7 @@ import drawing_library
 import Simulator
 import random
 from queue import Queue
+import scipy.misc
 
 class GameManager:
 
@@ -45,8 +46,8 @@ class GameManager:
         self.handle_events()
         curr = pygame.time.get_ticks()
         if (curr-self.prev)>self.curr_interval:
-            if self.started:
-                self.pixel_buffer.add_pixels(self.saver_pixels)
+            # if self.started:
+            #     self.pixel_buffer.add_pixels(self.saver_pixels)
             self.prev = curr
             # if random.random()<0.5:
             #     self.simulator.lane_ai.request_new_lane(prefer_left=True)
@@ -123,6 +124,7 @@ class GameManager:
         array = array[:, :, ::-1]
         self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
         self.new_frame =True
+        
     
     def semantic_callback(self,image):
         image.convert(carla.ColorConverter.CityScapesPalette)
@@ -130,14 +132,9 @@ class GameManager:
         array = np.reshape(array, (image.height, image.width, 4))
         array = array[:, :, :3]
         array = array[:, :, ::-1]
-        array = array.reshape(-1,3)
-        self.array =array
+        array = array[115:510,:]
+        self.array = array
 
-        array = self.transform_array2(array)
-        array  = np.reshape(array, (image.height//2, image.width, 3))
-    
-        self.surface2 = pygame.surfarray.make_surface(array.swapaxes(0, 1))
-        self.new_frame2 =True
         # self.color_density.add_density(self.array)
         self.started = True
         # print(self.color_density.get_offset())

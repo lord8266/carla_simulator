@@ -5,7 +5,7 @@ import Simulator
 import pygame
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-import ai_model
+# import ai_model
 # import ac_model
 
 
@@ -14,11 +14,11 @@ def get_action():
     max_ = len(simulator.control_manager.controls)
     return np.random.randint(0,max_)
 
-simulator = Simulator.Simulator('172.16.175.136')
+simulator = Simulator.Simulator('172.16.175.15')
 # simulator = Simulator.Simulator()
 
 
-model = ai_model.Model(simulator,6,len(simulator.control_manager.controls))
+# model = ai_model.Model(simulator,6,len(simulator.control_manager.controls))
 # ac_model=ac_model.AC_model(simulator,6,3)
 # model=ac_model.actor.model
 
@@ -30,7 +30,7 @@ clock = pygame.time.Clock()
 
 
 while running:
-    action = model.predict(observation)
+    action = get_action()
     curr = pygame.time.get_ticks()
     observation,reward,done,_ = simulator.step(action)
     # observation,reward,done,_ = simulator.step(action,2)
