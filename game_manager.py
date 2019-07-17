@@ -12,7 +12,7 @@ FULLHD = (1920,1080)
 HD = (1280,720)
 WSVGA = (1024,768)
 VGA = (640,480)
-
+SVGA = (800,600)
 class GameManager:
 
     def __init__(self,simulator,resolution=VGA):
@@ -32,7 +32,7 @@ class GameManager:
         self.saver_pixels = None
         self.started = False
         self.wait_time()
-
+        self.start_imitate = False
     def wait_time(self):
         stop = True
         while stop:
@@ -137,7 +137,16 @@ class GameManager:
         array = array[:, :, ::-1]
         self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
         self.new_frame =True
-    
+
+    def camera_callback2(self,image):
+        image.convert(carla.ColorConverter.Raw)
+        array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
+        array = np.reshape(array, (image.height, image.width, 4))
+        array = array[:, :, :3]
+        array = array[:, :, ::-1]
+        self.current_image = array
+        self.start_imitate = True
+
     def semantic_callback(self,image):
         image.convert(carla.ColorConverter.CityScapesPalette)
         array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))

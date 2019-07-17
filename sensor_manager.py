@@ -39,8 +39,16 @@ class SensorManager():
         camera_blueprint.set_attribute('image_size_y', '480')
         spawn_transform = carla.Transform(carla.Location(x=-4, z=2.3),carla.Rotation(pitch=-15))
         self.camera = self.simulator.world.spawn_actor(camera_blueprint,spawn_transform,attach_to=self.simulator.vehicle_controller.vehicle)
-        
-    
+
+    def initialize_rgb_camera2(self):
+        camera_blueprint  = self.simulator.blueprint_library.find('sensor.camera.rgb')
+        # camera_blueprint.set_attribute('image_size_x', '1280')
+        # camera_blueprint.set_attribute('image_size_y', '720')
+        camera_blueprint.set_attribute('image_size_x', '800')
+        camera_blueprint.set_attribute('image_size_y', '600')
+        spawn_transform = carla.Transform(carla.Location(x=1.8, z=1.3),carla.Rotation(pitch=-15))
+        self.camera2 = self.simulator.world.spawn_actor(camera_blueprint,spawn_transform,attach_to=self.simulator.vehicle_controller.vehicle)   
+
     def initialize_semantic_camera(self):
         semantic_blueprint  = self.simulator.blueprint_library.find('sensor.camera.semantic_segmentation')
         semantic_blueprint.set_attribute('image_size_x', '200')
@@ -55,6 +63,7 @@ class SensorManager():
         self.collision_sensor.listen(lambda event: self.collide_call(event) )
     
     def collide_call(self,event):
+        print(event.other_actor)
         if str(event.other_actor).find('vehicle')!=-1:
             self.simulator.collide_cnt+=1
 

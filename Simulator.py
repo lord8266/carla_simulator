@@ -16,7 +16,8 @@ import lane_ai
 import traffic_controller
 from agents.navigation import basic_agent
 import data_collector
-import ai_model
+# import ai_model
+
 
 class Type(Enum):
     Automatic =1
@@ -97,7 +98,7 @@ def transform_observation(obs):
 
 class Simulator:
 
-    def __init__(self,carla_server='127.0.0.1',port=2000):
+    def __init__(self,imitation_net,carla_server='127.0.0.1',port=2000):
         pygame.init()
         self.initialize_game_manager()
 
@@ -115,9 +116,9 @@ class Simulator:
         self.key_control = False
         self.collision_vehicle =False
         self.traffic_controller = traffic_controller.TrafficController(self,150)
-        self.traffic_controller.add_vehicles()
-        self.lane_ai = lane_ai.LaneAI(self)
+        # self.traffic_controller.add_vehicles()
         #need to change from here
+        self.lane_ai = lane_ai.LaneAI(self)
         self.navigation_system.make_local_route()
         self.agent = basic_agent.BasicAgent(self.vehicle_controller.vehicle)
         # drawing_library.draw_arrows(self.world.debug,[i.location for i in self.navigation_system.ideal_route])
@@ -131,15 +132,16 @@ class Simulator:
         self.last_stop = pygame.time.get_ticks()
         self.cnt = 0
         self.collide_cnt = 0
-
+        self.imitation_net = imitation_net
+        self.directions = ImitateDirection(self)
     def temp(self):
         self.vehicle_controller.vehicle.set_transform(self.navigation_system.start)
 
     def intitalize_carla(self,carla_server,port):
         self.client = carla.Client(carla_server,port)
         self.client.set_timeout(12.0)
-        self.world = self.client.load_world('Town03')#self.client.get_world()
-        # self.world.set_weather(carla.WeatherParameters.ClearSunset)
+        self.world = self.client.load_world('Town02')#self.client.get_world()
+        self.world.set_weather(carla.WeatherParameters.ClearNoon)
         # self.world = self.client.get_world()
         settings = self.world.get_settings() 
         settings.synchronous_mode = True # 21 22 247 248
@@ -208,14 +210,19 @@ class Simulator:
     def initialize_sensor_manager(self):
        self.sensor_manager = sensor_manager.SensorManager(self)
        self.sensor_manager.initialize_rgb_camera()
+       self.sensor_manager.initialize_rgb_camera2()
+
        self.camera_type = CameraType.RGB
        self.sensor_manager.camera.listen(lambda image: self.game_manager.camera_callback(image))
+       self.sensor_manager.camera2.listen(lambda image: self.game_manager.camera_callback2(image))
+
        self.sensor_manager.initialize_semantic_camera()
     #    self.sensor_manager.initialize_obstacle_sensor()
     #    self.sensor_manager.semantic_camera.listen(lambda image: self.game_manager.semantic_callback(image))
-       self.sensor_manager.initialize_collision_sensor()
+    #    self.sensor_manager.initialize_collision_sensor()
     #    self.sensor_manager.initialize_lane_invasion_sensor()
-       
+    
+
        
     def initialize_game_manager(self):
         self.game_manager = game_manager.GameManager(self)
@@ -231,7 +238,7 @@ class Simulator:
         self.vehicle_variables = VehicleVariables(self)
         self.vehicle_variables.start_wait(self.navigation_system.start)
     
-    def step(self,action):
+    def step(self,action,imitate=False):
         self.world.tick()
         # ts = self.world.wait_for_tick()
 
@@ -248,12 +255,16 @@ class Simulator:
         
         if self.type == Type.Manual:
             self.vehicle_controller.control_by_input()
+        elif imitate:
+            if self.game_manager.start_imitate:
+                control = self.imitation_net._compute_action(self.game_manager.current_image,5.67,2.0)
+                self.vehicle_controller.copy_control(control)
         else:
             self.vehicle_controller.copy_control(self.control_manager.controls[action])
         # elif model==2:
         #     self.vehicle_controller.change_control(action)
 
-            
+        self.directions.update_direction_v2()   
         
         self.render()
         
@@ -275,7 +286,7 @@ class Simulator:
         #     control.throttle = 0.0
         #     control.brake = 1.0
 
-        self.traffic_controller.update()
+        # self.traffic_controller.update()
         # self.vehicle_controller.control_by_input(passive=True)
 
         self.vehicle_controller.apply_control()
@@ -403,6 +414,73 @@ class Simulator:
 def collision_with(event):
     
     print("collision")
+
+
+class DirectionState:
+    Follow=2
+    Left=3
+    Right=4 
+    Straight=5 
+
+class ImitateDirection:
+
+    def __init__(self,simulator):
+        self.simulator = simulator
+        self.navigation_system = simulator.navigation_system
+        self.direction = DirectionState.Follow
+        self.cnt = 0
+        self.prev = pygame.time.get_ticks()
+    def update_direction(self):
+
+        len_  = len(self.navigation_system.ideal_route)
+        if (len_-self.navigation_system.curr_pos)>=15:
+            waypoints = self.navigation_system.ideal_route_waypoints[self.navigation_system.curr_pos:self.navigation_system.curr_pos+15]
+        else:
+            waypoints = self.navigation_system.ideal_route_waypoints[self.navigation_system.curr_pos:]
+        
+        if self.direction==DirectionState.Follow:
+            prev_road_id = waypoints[0].road_id
+
+            state = 0
+            for w in waypoints[1:]:
+                road_id = w.road_id
+                if state==0:
+                    if road_id!=prev_road_id and w.is_intersection:
+                        state =1
+                        start_road_angle = w.transform.rotation.yaw%360
+                    
+                elif state==1:
+                    if road_id!=prev_road_id:
+                        state =2
+                        end_road_angle = w.transform.rotation.yaw%360
+                        end_road = w
+                prev_road_id = road_id
+
+            if state==2:
+                print( int(start_road_angle),int(end_road_angle),self.cnt)
+                self.cnt+=1
+    
+    def update_direction_v2(self):
+        curr =pygame.time.get_ticks()
+
+        start = self.navigation_system.ideal_route_waypoints[self.navigation_system.curr_pos]
+        prev_angle = start.transform.rotation.yaw
+        if (curr-self.prev)>1000:
+            self.prev = curr
+            differences = 0
+            for w in self.navigation_system.ideal_route_waypoints[self.navigation_system.curr_pos+1:self.navigation_system.curr_pos+5]:
+
+                angle =w.transform.rotation.yaw
+
+                differences+= angle-prev_angle
+                print(angle)
+                # prev_angle = angle
+            
+            print("Differences:",differences,'\n')
+        
+
+
+        
 
 
 

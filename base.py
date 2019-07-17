@@ -1,6 +1,6 @@
 
 
-
+import imitation_learning
 import Simulator
 import pygame
 import numpy as np
@@ -14,8 +14,11 @@ def get_action():
     max_ = len(simulator.control_manager.controls)
     return 2#np.random.randint(0,max_)
 
-simulator = Simulator.Simulator('172.16.175.136')
-# simulator = Simulator.Simulator()
+imitation_net  = imitation_learning.ImitationLearning()
+
+simulator = Simulator.Simulator(imitation_net, carla_server='172.16.175.15')
+
+# simulator = Simulator.Simulator(imitation_net)
 
 
 model = ai_model.Model(simulator,6,len(simulator.control_manager.controls))
@@ -31,7 +34,7 @@ while running:
     clock.tick_busy_loop(30)
     action =model.predict(observation)
     curr = pygame.time.get_ticks()
-    observation,reward,done,_ = simulator.step(action)
+    observation,reward,done,_ = simulator.step(action,imitate=True)
     curr_reward+=reward
     if (curr-prev)>1000/200:
         # print("Reward: ",simulator.reward_system.curr_reward)
