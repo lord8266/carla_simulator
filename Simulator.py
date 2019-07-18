@@ -207,9 +207,9 @@ class Simulator:
        self.sensor_manager.initialize_rgb_camera()
        self.camera_type = CameraType.RGB
        self.sensor_manager.camera.listen(lambda image: self.game_manager.camera_callback(image))
-       self.sensor_manager.initialize_semantic_camera()
+    #    self.sensor_manager.initialize_semantic_camera()
     #    self.sensor_manager.initialize_obstacle_sensor()
-       self.sensor_manager.semantic_camera.listen(lambda image: self.game_manager.semantic_callback(image))
+    #    self.sensor_manager.semantic_camera.listen(lambda image: self.game_manager.semantic_callback(image))
        self.sensor_manager.initialize_collision_sensor()
     #    self.sensor_manager.initialize_lane_invasion_sensor()
        
@@ -272,8 +272,10 @@ class Simulator:
 
         w = self.vehicle_variables.vehicle_waypoint
         
-        if w.is_intersection and self.vehicle_variables.vehicle_velocity_magnitude > 6 :
+        if w.is_intersection and self.vehicle_variables.vehicle_velocity_magnitude > 5 :
             self.vehicle_controller.control.throttle *= 0.6
+        # if w.is_intersection and self.vehicle_controller.control.steer > 0:
+        #     self.vehicle_controller.control.throttle *= 1.3
 
         self.vehicle_controller.apply_control()
         

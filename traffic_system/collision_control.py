@@ -16,8 +16,8 @@ from keras.optimizers import sgd,Adam
 import os
 import random
 import reward_system
-HIDDEN1_UNITS = 20
-HIDDEN2_UNITS = 18
+HIDDEN1_UNITS = 50
+HIDDEN2_UNITS = 40
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -41,17 +41,17 @@ class CollisionControl:
         self.apply_condtions()
     
     def apply_condtions(self):
-        
-        if self.lane_changer.state==lane_ai.State.LANE_CHANGE:
-            self.disable_AI()
-            self.lane_changing_halt()
-            self.lane_changer.update_waypoint()
+        pass
+        # if self.lane_changer.state==lane_ai.State.LANE_CHANGE:
+        #     self.disable_AI()
+        #     self.lane_changing_halt()
+        #     self.lane_changer.update_waypoint()
 
-        elif self.lane_changer.state==lane_ai.State.RUNNING:
-            if self.state==ControlState.AI:
-                self.modify_by_AI()
-            self.same_lane_halt()
-            self.check_new_lane()
+        # elif self.lane_changer.state==lane_ai.State.RUNNING:
+        #     if self.state==ControlState.AI:
+        #         self.modify_by_AI()
+        #     self.same_lane_halt()
+        #     self.check_new_lane()
 
            
     
@@ -176,10 +176,12 @@ class SpeedControlEnvironment:
 
 
         curr_reward = 0
-        car_distance = abs(s_obs[0])
-        car_delta = s_obs[1]
+        car_distance = abs(s_obs[0])*3
+        car_delta = s_obs[1]/10
 
         if car_distance>=11:
+            if self.control.throttle >= 0.5 and car_delta<0.2:
+                curr_reward += 125
             # if 0.02<=car_delta:
             #     curr_reward -= 50
             # elif 0.02>car_delta:
@@ -191,11 +193,13 @@ class SpeedControlEnvironment:
             elif -0.2<=car_delta<-0.04:
                 curr_reward += 25
             elif -0.04<=car_delta<0.2:
-                curr_reward -= 100
-            elif 0.1<=car_delta:
-                curr_reward -= 100
+                curr_reward -= 50
+            elif 0.2<=car_delta:
+                curr_reward -= 75
 
         elif 8<car_distance<11:
+            if self.control.throttle >= 0.3 and -0.4<=car_delta<0.2:
+                curr_reward += 125
             # if -0.2<=car_delta<=0.05:
             #     curr_reward += 75
             # elif -0.2>car_delta>-0.4:
@@ -243,9 +247,11 @@ class SpeedControlEnvironment:
             elif 0.08<=car_delta<0.2:
                 curr_reward -= 50
             elif 0.1<=car_delta:
-                curr_reward -= 100
+                curr_reward -= 75
         
-        elif 6>car_distance:
+        elif 6>car_distance>4.8:
+            if self.control.brake > 0.0 and car_delta<0.0:
+                curr_reward += 125
             # if -0.02<car_delta<=0.02:
             #     curr_reward += 75
             # elif 0.02<car_delta:
@@ -265,15 +271,21 @@ class SpeedControlEnvironment:
             elif 0.1<=car_delta:
                 curr_reward -= 100
 
+        elif car_distance<=4.8:
+            if self.control.brake > 0.0 and car_delta<=0.0:
+                curr_reward += 125
+            elif car_delta>0.0 and self.control.throttle > 0.0:
+                curr_reward -= 500
+
         # if car_distance == 100:
         #     curr_reward = 0
-        print("reward :","%4.2d"%(curr_reward), "\tobs :",s_obs, end="")
+        print("reward :","%4.1d"%curr_reward, "\t\tobs :"," %5.2f"%(s_obs[0]),"  %5.2f"%(s_obs[1]),"  %5.2f"%(s_obs[2]), end="")
         return self.get_observation(),curr_reward
             
 
 class SpeedControlAI:
 
-    def __init__(self,environment,input_size=3,action_size=6,save_file='save/model'):
+    def __init__(self,environment,input_size = 3,action_size=6,save_file='save/model'):
 
         self.state_size = input_size
         self.action_size = action_size
@@ -288,7 +300,7 @@ class SpeedControlAI:
 
         self.target_model = self.build_model()
 
-        self.reward_tracker = reward_system.RewardTracker(self,50,70000,prefix='traffic_system')
+        self.reward_tracker = reward_system.RewardTracker(self,25,100000,prefix='traffic_system')
         self.start =0
         self.load()
 
@@ -300,8 +312,10 @@ class SpeedControlAI:
         self.batch_size =32
         self.step =0
         self.start_episode=1
-        self.collector = collision_data_collector.DataCollector(environment.traffic_controller.simulator,'collision_data',500,100,100)
-        self.image_collector = collision_data_collector.DataCollector(environment.traffic_controller.simulator,'collision_images',600,25,100)
+        self.random = random.random()
+        self.randomcounter = 0
+        # self.collector = collision_data_collector.DataCollector(environment.traffic_controller.simulator,'collision_data',500,100,100)
+        # self.image_collector = collision_data_collector.DataCollector(environment.traffic_controller.simulator,'collision_images',600,25,100)
         self.prev_data = 20
 
         self.prev_time = pygame.time.get_ticks()
@@ -309,12 +323,13 @@ class SpeedControlAI:
     def update_target_model(self):
         # copy weights from model to target_model
         self.target_model.set_weights(self.model.get_weights())
+        print("\nTarget model updated")
         
     def build_model(self):
 
         model = Sequential()
         model.add(Dense(HIDDEN1_UNITS, input_dim=self.state_size, activation='tanh'))
-        model.add(Dense(HIDDEN2_UNITS, input_dim=self.state_size, activation='tanh'))
+        model.add(Dense(HIDDEN2_UNITS, activation='tanh'))
         model.add(Dense(self.action_size, activation='softmax'))
         model.compile(loss = 'mse',optimizer = Adam(lr = self.learning_rate))
         print("built double deep q model for collision control")
@@ -343,8 +358,14 @@ class SpeedControlAI:
             print("Not Saving")
 
     def act(self, state):
+        if self.randomcounter == 0:
+            self.random = random.random()
+        self.randomcounter += 1
+        self.randomcounter %= 2
+
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP]:
+            print("control :",end = " ")
             if keys[pygame.K_1]:
                 return 2
             elif keys[pygame.K_2]:
@@ -354,6 +375,7 @@ class SpeedControlAI:
             else:
                 return random.randint(0,2)
         if keys[pygame.K_DOWN]:
+            print("control :",end = " ")
             if keys[pygame.K_1]:
                 return 3
             elif keys[pygame.K_2]:
@@ -364,11 +386,12 @@ class SpeedControlAI:
                 return random.randint(3,5)
 
 
-        if 0.4 <= self.epsilon:
-            # return random.randint(0,5)
+        if False:#self.random<self.epsilon:
+            print("action  :",end = " ")
+            return random.randint(0,5)
             s_obs = state[0]
-            car_distance = abs(s_obs[0])
-            car_delta = s_obs[1]
+            car_distance = abs(s_obs[0])*3
+            car_delta = s_obs[1]/10
             car_speed = s_obs[2]
 
             if 20<car_distance and car_speed > 9:
@@ -389,8 +412,10 @@ class SpeedControlAI:
                     return 0
             
             elif 8<car_distance<11:
-                if car_speed > 6:
-                    return 4
+                if car_speed > 6 and car_delta<-0.2:
+                    return 5
+                elif car_speed > 6 and -0.2<=car_delta<0.02:
+                    return 2
                 if car_delta<-0.5:
                     return 4
                 elif -0.5<=car_delta<-0.3:
@@ -440,7 +465,7 @@ class SpeedControlAI:
 
             elif 4.8>=car_distance:
                 return 5
-
+        print("predict: ",end=" ")
         act_values = self.model.predict(state)
         return np.argmax(act_values[0]) 
 
@@ -452,6 +477,12 @@ class SpeedControlAI:
     # def replay(self, batch_size):
 
     #     minibatch = random.sample(self.memory, batch_size)
+    #     minibatch=np.array(minibatch)
+    #     rewards=minibatch[:,2]
+    #     mean=np.mean(rewards)
+    #     std=np.std(rewards)
+    #     minibatch[:,2]=(rewards-mean)/(std+1e-10)
+
     #     for state, action, reward, next_state, done in minibatch:
     #         target = reward
     #         if not done:
@@ -460,18 +491,23 @@ class SpeedControlAI:
     #         target_f = self.model.predict(state)
     #         target_f[0][action] = target
     #         self.model.fit(state, target_f, epochs=1, verbose=0)
-    #     if self.episode % 30 == 0 and self.start_episode:
+    #     if self.episode % 20 == 0 and self.start_episode:
     #         self.start_episode = 0
     #         if self.epsilon > self.epsilon_min:
     #             self.epsilon *= self.epsilon_decay
     #         else:
-    #             self.epsilon = 0.35
-    #     elif self.episode % 30 != 0 :
+    #             self.epsilon = 0.8
+    #     elif self.episode % 20 != 0 :
     #         self.start_episode = 1
 
     def replay(self, batch_size):
 
         minibatch = random.sample(self.memory, batch_size)
+        minibatch=np.array(minibatch)
+        rewards=minibatch[:,2]
+        mean=np.mean(rewards)
+        std=np.std(rewards)
+        minibatch[:,2]=(rewards-mean)/(std+1e-10)
         for state, action, reward, next_state, done in minibatch:
             target = self.model.predict(state)
             if done:
@@ -481,6 +517,7 @@ class SpeedControlAI:
                 t = self.target_model.predict(next_state)[0]
                 target[0][action] = reward + self.gamma * np.amax(t)
                 # target[0][action] = reward + self.gamma * t[np.argmax(a)]
+            # print("\ntarget",reward,t)
             self.model.fit(state, target, epochs=1, verbose=0)
 
         if self.episode % 20 == 0 and self.start_episode:
@@ -492,10 +529,7 @@ class SpeedControlAI:
         elif self.episode % 20 != 0 :
             self.start_episode = 1
 
-
             
-        # if self.epsilon > self.epsilon_min:
-        #     self.epsilon *= self.epsilon_decay
 
 
     def load(self):
@@ -519,11 +553,11 @@ class SpeedControlAI:
         batch_size = self.batch_size
         prev_state = self.prev_state
         action = self.act(prev_state)
-        print("action : ",action, end="   ")
-        self.collect_data(prev_state,action)
+        print(action, end="   ")
+        # self.collect_data(prev_state,action)
         state,reward = self.environment.modify_control(action)
         if failed:
-            reward-=1500
+            reward-=1000000500
         # print("State:"+str(state),"Reward:" + str(reward),sep='\n',end='\n\n')
         print()
         state = np.reshape(state, [1, self.state_size])

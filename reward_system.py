@@ -178,7 +178,7 @@ class RewardTracker:
         self.model_offset =0
         
     def end_episode(self,score):
-        # pass
+        print(score,self.curr_episode)
         if not self.curr_episode%self.batch_size and self.curr_episode!=0:
             self.ep_rewards['avg'][self.curr_episode//self.batch_size-1] =   np.average(self.reward_buffer)
             self.ep_rewards['min'][self.curr_episode//self.batch_size-1] =   np.min(self.reward_buffer)
