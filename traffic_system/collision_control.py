@@ -116,8 +116,7 @@ class CollisionControl:
                 
                 avail,image = self.stack_images()
                 if avail:
-                    scipy.misc.imsave('data.png',image)
-                    self.image_collector.save_data(image,target)
+                    self.image_collector.save_data(image,[state,target])
                 self.prev_time = curr
 
             self.data_collector.save_data(state,target)
