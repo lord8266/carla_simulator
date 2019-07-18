@@ -21,7 +21,7 @@ class VehicleController:
 
     def intialize_vehicle(self):
         vehicle_blueprint = self.simulator.blueprint_library.find('vehicle.audi.tt')
-        vehicle_blueprint.set_attribute('role','hero')
+        vehicle_blueprint.set_attribute('role_name','hero')
         if vehicle_blueprint.has_attribute('color'):
             print(list(vehicle_blueprint.get_attribute('color').recommended_values))
 

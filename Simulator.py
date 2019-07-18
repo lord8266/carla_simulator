@@ -266,7 +266,7 @@ class Simulator:
             
        
         
-        if (curr-self.last_stop)>5000: #and self.traffic_controller.override:
+        if (curr-self.last_stop)>3000: #and self.traffic_controller.override:
             self.re_level()
             self.last_stop = curr
 
@@ -370,6 +370,8 @@ class Simulator:
         
         self.navigation_system.make_ideal_route_r(self.start_point,self.end_point)
         self.on_restart()
+
+        
 
 
     def render(self):

@@ -56,7 +56,8 @@ class SensorManager():
     
     def collide_call(self,event):
         if str(event.other_actor).find('vehicle')!=-1:
-            self.simulator.collide_cnt+=1
+            self.simulator.traffic_controller.collision_control.record_server.start_recording()
+            self.simulator.traffic_controller.collision_control.record_server.stop_recording(type_=1)
 
     def initialize_obstacle_sensor(self):
         obstacle_sensor_blueprint = self.simulator.blueprint_library.find('sensor.other.obstacle')

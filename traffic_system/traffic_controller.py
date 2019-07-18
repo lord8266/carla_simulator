@@ -35,7 +35,7 @@ class TrafficController:
         self.lane_obstacles = {}
         self.collision_control = collision_control.CollisionControl(self)
         self.override = False
-
+        
     def add_vehicles(self):
         blueprints = self.simulator.world.get_blueprint_library().filter('vehicle.*')
         blueprints = [x for x in blueprints if int(x.get_attribute('number_of_wheels')) == 4]

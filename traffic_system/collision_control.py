@@ -19,7 +19,7 @@ HIDDEN1_UNITS = 50
 HIDDEN2_UNITS = 40
 import os
 import traffic_controller
-
+import record_server
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
@@ -38,7 +38,8 @@ class CollisionControl:
         self.control = trc.simulator.vehicle_controller.control
         self.state = LaneState.SAME_LANE
         self.curr_lane = self.traffic_controller.simulator.vehicle_variables.lane_id
-
+        self.record_server = record_server.RecordServer(trc.simulator)
+        self.check_completion=False
     def update(self):
         if self.state==LaneState.SAME_LANE:
             self.update_same_lane()
@@ -48,6 +49,8 @@ class CollisionControl:
 
         self.update_lane_change()
         self.try_lane_change()
+        self.check_lane_change_completion()
+        self.record_server.update()
 
     def update_same_lane(self,type_=1):
 
@@ -57,9 +60,8 @@ class CollisionControl:
         if lane_id in lane_obstacles:
             if lane_obstacles[lane_id]:
                 front = lane_obstacles[lane_id][0]
-
+                self.record_server.start_recording()
                 d = front.distance
-                print(d)
                 if type_==1:
                     if 6.5<d<10.5 and front.delta_d<0:
                         if self.traffic_controller.simulator.vehicle_variables.vehicle_velocity_magnitude>1:
@@ -72,12 +74,14 @@ class CollisionControl:
                     if d<4.5:
                         self.control.throttle = 0.0
                         self.control.brake = 1.0
+                        self.record_server.stop_recording(2)
                         # print("Donned")
                 else:
                      if d<1:
                             self.control.throttle = 0.0
                             self.control.brake = 1.0
                             # print("Donned")
+                            self.record_server.stop_recording(2)
 
     def update_target_lane(self):
         lane_obstacles = self.traffic_controller.lane_obstacles
@@ -104,7 +108,6 @@ class CollisionControl:
             if a_road_id==road_id:
             
                 if a_lane_id!=lane_id:
-                    print("here")
                     self.state  =LaneState.LANE_CHANGE
                     # print("New lane:",a_lane_id)
                     self.target_lane = a_lane_id
@@ -117,6 +120,16 @@ class CollisionControl:
             self.state = LaneState.LANE_CHANGE
         else:
             self.state = LaneState.SAME_LANE
+
+    def check_lane_change_completion(self):
+        
+        if self.check_completion:
+            curr = self.traffic_controller.simulator.vehicle_variables.vehicle_waypoint
+            target =self.target_lane
+
+            if curr.lane_id==target:
+                self.record_server.stop_recording(0)
+                self.check_completion = False
 
                    
     def try_lane_change(self,force=False):
@@ -145,7 +158,10 @@ class CollisionControl:
                                     passed = False
                         
         if passed:
+            self.record_server.start_recording()
+            self.check_completion = True
             self.traffic_controller.simulator.navigation_system.add_event(prev_,next_)
+            self.target = next_.lane_id
 
 
 
@@ -328,7 +344,7 @@ class SpeedControlAI:
 
         model = Sequential()
         model.add(Dense(HIDDEN1_UNITS, input_dim=self.state_size, activation='tanh'))
-        model.add(Dense(HIDDEN2_UNITS, input_dim=self.state_size, activation='tanh'))
+        model.add(Dense(HIDDEN2_UNITS, activation='tanh'))
         model.add(Dense(self.action_size, activation='softmax'))
         model.compile(loss = 'mse',optimizer = Adam(lr = self.learning_rate))
         print("built double deep q model for collision control")
