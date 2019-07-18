@@ -42,7 +42,7 @@ class CollisionControl:
         self.record_server.enabled=False
         self.check_completion=False
         self.last_state = self.state
-
+        
     def update(self):
         if self.state==LaneState.SAME_LANE:
             self.update_same_lane()
@@ -99,7 +99,7 @@ class CollisionControl:
         
         elif action==2:
             self.control.throttle/=2
-    
+
     def update_target_lane(self):
         lane_obstacles = self.traffic_controller.lane_obstacles
         lane_id = self.target_lane
