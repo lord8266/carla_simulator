@@ -99,7 +99,7 @@ class CollisionControl:
         
         elif action==2:
             self.control.throttle/=2
-
+    
     def update_target_lane(self):
         lane_obstacles = self.traffic_controller.lane_obstacles
         lane_id = self.target_lane
