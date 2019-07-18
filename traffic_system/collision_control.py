@@ -45,7 +45,7 @@ class CollisionControl:
         self.check_completion=False
         self.last_state = self.state
         self.data_collector = data_collector.DataCollector('collision_data',500,100,100)
-        self.image_collector = data_collector.DataCollector('collision_images',500,10,10)
+        self.image_collector = data_collector.DataCollector('collision_images',600,20,20)
         self.prev_time = pygame.time.get_ticks()
         self.image_size = (88, 200, 3)
         self.prev_state = [20,0.1]
@@ -116,7 +116,7 @@ class CollisionControl:
                 
                 avail,image = self.stack_images()
                 if avail:
-                    self.image_collector.save_data(image,[state,target])
+                    self.image_collector.save_data(image,np.array([state[0],state[1],target]) )
                 self.prev_time = curr
 
             self.data_collector.save_data(state,target)
