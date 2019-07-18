@@ -159,14 +159,14 @@ class TrafficController:
             return None
 
     def enableAI(self):
-        # pass
-        if self.ai_enabled:
-            self.env.run()
+        pass
+        # if self.ai_enabled:
+        #     self.env.run()
             
-        else:
-            print("Enable AI")
-            self.ai_enabled =True
-            self.env.start()
+        # else:
+        #     print("Enable AI")
+        #     self.ai_enabled =True
+        #     self.env.start()
 
     def disableAI(self,failed=False):
         if self.ai_enabled:

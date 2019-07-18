@@ -40,38 +40,41 @@ class CollisionControl:
         self.curr_lane = self.traffic_controller.simulator.vehicle_variables.lane_id
 
     def update(self):
-        pass
-        # if self.state==LaneState.SAME_LANE:
-        #     self.update_same_lane()
-        # else:
-        #     # self.update_same_lane(0)
-        #     self.update_target_lane()
+        if self.state==LaneState.SAME_LANE:
+            self.update_same_lane()
+        else:
+            # self.update_same_lane(0)
+            self.update_target_lane()
 
-        # self.update_lane_change()
-        # self.try_lane_change()
+        self.update_lane_change()
+        self.try_lane_change()
 
     def update_same_lane(self,type_=1):
 
         lane_obstacles = self.traffic_controller.lane_obstacles
+        # print(lane_obstacles)
         lane_id = self.curr_lane
         if lane_id in lane_obstacles:
             if lane_obstacles[lane_id]:
                 front = lane_obstacles[lane_id][0]
 
                 d = front.distance
+                print(d)
                 if type_==1:
-                    if 5.5<d<10.5 and front.delta_d<0:
+                    if 6.5<d<10.5 and front.delta_d<0:
                         if self.traffic_controller.simulator.vehicle_variables.vehicle_velocity_magnitude>1:
                             self.control.throttle/=2
 
+                    if 4.5<d<6.5 and front.delta_d<0:
+                        self.control.throttle =0.3
                             
 
-                    if d<5.5 and front.delta_d<0:
+                    if d<4.5:
                         self.control.throttle = 0.0
                         self.control.brake = 1.0
                         # print("Donned")
                 else:
-                     if d<0.7 and front.delta_d<0:
+                     if d<1:
                             self.control.throttle = 0.0
                             self.control.brake = 1.0
                             # print("Donned")

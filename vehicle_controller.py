@@ -21,6 +21,7 @@ class VehicleController:
 
     def intialize_vehicle(self):
         vehicle_blueprint = self.simulator.blueprint_library.find('vehicle.audi.tt')
+        vehicle_blueprint.set_attribute('role','hero')
         if vehicle_blueprint.has_attribute('color'):
             print(list(vehicle_blueprint.get_attribute('color').recommended_values))
 
@@ -87,7 +88,7 @@ class VehicleController:
     
     def apply_control(self):
         if self.cmp_control():
-            # print("ControlCHange:" ,self.control)
+            # print("ControlChange:" ,self.control)
             
             if self.simulator.key_control:
                 print("Imitate:",self.control)

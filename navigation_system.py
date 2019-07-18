@@ -91,7 +91,7 @@ class NavigationSystem:
         self.ideal_route_waypoints = parallel_lane+ self.ideal_route_waypoints[self.curr_pos:]
         self.ideal_route = [w.transform for w in parallel_lane] + self.ideal_route[self.curr_pos:]
         # print("made it here")
-        drawing_library.draw_arrows(self.simulator.world.debug,[i.location for i in self.ideal_route][:2],life_time=3)
+        drawing_library.draw_arrows(self.simulator.world.debug,[i.location for i in self.ideal_route][2:5],life_time=3)
         self.clean_route()
         self.fill_gaps()
         self.clean_back()
