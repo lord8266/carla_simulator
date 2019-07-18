@@ -22,10 +22,10 @@ class DataCollector:
         self.max_saves = max_saves
         self.buffer_max = buffer_max
         self.save_size = save_size
-        self.load()
         self.max_reached = False
         self.debug = debug
-        
+        self.load()
+
     def save_data(self,data,target,as_image=False):
         
 

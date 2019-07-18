@@ -45,7 +45,7 @@ class SensorManager():
         semantic_blueprint  = self.simulator.blueprint_library.find('sensor.camera.semantic_segmentation')
         semantic_blueprint.set_attribute('image_size_x', '800')
         semantic_blueprint.set_attribute('image_size_y', '600')
-        spawn_transform = carla.Transform(carla.Location(x=2, z=1),carla.Rotation())
+        spawn_transform = carla.Transform(carla.Location(x=1.8, z=1.3),carla.Rotation())
         self.semantic_camera = self.simulator.world.spawn_actor(semantic_blueprint,spawn_transform,attach_to=self.simulator.vehicle_controller.vehicle)
     
 

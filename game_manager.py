@@ -7,15 +7,11 @@ import drawing_library
 import Simulator
 import random
 from queue import Queue
-
-FULLHD = (1920,1080)
-HD = (1280,720)
-WSVGA = (1024,768)
-VGA = (640,480)
+import scipy.misc
 
 class GameManager:
 
-    def __init__(self,simulator,resolution=VGA):
+    def __init__(self,simulator,resolution=(640,480)):
         self.initialize_pygame(resolution)
         self.simulator = simulator
         self.new_frame = False
@@ -25,21 +21,13 @@ class GameManager:
         self.prev = pygame.time.get_ticks()
         self.draw_periodic = False
         # self.color_density = Density(simulator)
-        self.curr_interval = 100
+        self.curr_interval = 200
         self.started =False
         self.draw_prev = self.prev
         self.pixel_buffer  =PixelBuffer(simulator)
         self.saver_pixels = None
         self.started = False
-        self.wait_time()
-
-    def wait_time(self):
-        stop = True
-        while stop:
-            for event in pygame.event.get():
-
-                if event.type==pygame.KEYDOWN:
-                    stop=False
+        
     def initialize_pygame(self,resolution):
         pygame.init()
         self.display = pygame.display.set_mode(resolution,pygame.HWSURFACE | pygame.DOUBLEBUF)
@@ -59,7 +47,7 @@ class GameManager:
         curr = pygame.time.get_ticks()
         if (curr-self.prev)>self.curr_interval:
             if self.started:
-                self.pixel_buffer.add_pixels(self.saver_pixels)
+                self.pixel_buffer.add_pixels(self.array)
             self.prev = curr
             # if random.random()<0.5:
             #     self.simulator.lane_ai.request_new_lane(prefer_left=True)
@@ -109,8 +97,7 @@ class GameManager:
                     raise Exception()
                 
                 if event.key==pygame.K_l:
-                    pass
-                    self.simulator.traffic_controller.collision_control.try_lane_change(force=True)
+                    self.simulator.lane_ai.lane_changer.check_new_lane(force=True)
                     
 
                 if event.key==pygame.K_r:
@@ -137,6 +124,7 @@ class GameManager:
         array = array[:, :, ::-1]
         self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
         self.new_frame =True
+        
     
     def semantic_callback(self,image):
         image.convert(carla.ColorConverter.CityScapesPalette)
@@ -144,14 +132,9 @@ class GameManager:
         array = np.reshape(array, (image.height, image.width, 4))
         array = array[:, :, :3]
         array = array[:, :, ::-1]
-        array = array.reshape(-1,3)
-        self.array =array
+        array = array[115:510,:]
+        self.array = array
 
-        array = self.transform_array2(array)
-        array  = np.reshape(array, (image.height//2, image.width, 3))
-    
-        self.surface2 = pygame.surfarray.make_surface(array.swapaxes(0, 1))
-        self.new_frame2 =True
         # self.color_density.add_density(self.array)
         self.started = True
         # print(self.color_density.get_offset())
@@ -197,7 +180,7 @@ class PixelBuffer:
 
     def __init__(self,simulator):
         self.simulator = simulator
-        self.queue = np.zeros((10,100*200,1))
+        self.queue = np.zeros((10,395,800,3))
         self.curr_len = 0
         self.max_len =10
 
@@ -232,4 +215,3 @@ class PixelBuffer:
             return (self.buffer[59][0]-self.buffer[0][0]),(self.buffer[59][1]-self.buffer[0][1])
         else:
             return 0,0
-

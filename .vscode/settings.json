@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "/home/mlab/envs/tensorflow_cpu/bin/python",
+    "python.pythonPath": "/home/iotlab/envs/tensorflow_cpu/bin/python",
     "python.linting.pylintEnabled": true,
     "python.linting.enabled": true
 }

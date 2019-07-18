@@ -22,6 +22,8 @@ import traffic_controller
 import record_server
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
+import data_collector
+import scipy.misc
 
 class ControlState(Enum):
     AI=1,
@@ -42,12 +44,16 @@ class CollisionControl:
         self.record_server.enabled=False
         self.check_completion=False
         self.last_state = self.state
-        
+        self.data_collector = data_collector.DataCollector('collision_data',500,100,100)
+        self.image_collector = data_collector.DataCollector('collision_images',500,10,10)
+        self.prev_time = pygame.time.get_ticks()
+        self.image_size = (88, 200, 3)
+        self.prev_state = [20,0.1]
+
     def update(self):
         if self.state==LaneState.SAME_LANE:
             self.update_same_lane()
         else:
-            # self.update_same_lane(0)
             self.update_target_lane()
 
         self.update_lane_change()
@@ -82,15 +88,44 @@ class CollisionControl:
                     if distance<4.5:
                         self.modify_control(0,distance,front.delta_d)
                         self.record_server.stop_recording(2)
-                        # print("Donned")
                 else:
                      if distance<1:
                             self.modify_control(0,distance,front.delta_d)
-                            # print("Donned")
                             self.record_server.stop_recording(2)
 
-    def modify_control(self,action,distance,delta_d):
+    def stack_images(self):
+        avail,dat = self.traffic_controller.simulator.game_manager.pixel_buffer.get_pixels()
+        data=[]
+        for i in range(4):
+            avail,dat = self.traffic_controller.simulator.game_manager.pixel_buffer.get_pixels()
+            if avail==False:
+                return False,None
+            else:
+                dat = scipy.misc.imresize(dat, [self.image_size[0],self.image_size[1]])
+                data.append(dat)
+        
+        return True, np.c_[data].reshape( (self.image_size[0]*4,self.image_size[1],3) )
 
+    def collect_data(self,state,target):
+        state = round(state[0],3),state[1]
+        print(state)
+        if abs(state[0]-self.prev_state[0])>0.05:
+            curr =pygame.time.get_ticks()
+
+            if (curr-self.prev_time)>1500:
+                
+                avail,image = self.stack_images()
+                if avail:
+                    scipy.misc.imsave('data.png',image)
+                    self.image_collector.save_data(image,target)
+                self.prev_time = curr
+
+            self.data_collector.save_data(state,target)
+            self.prev_state = state
+            
+    
+    def modify_control(self,action,distance,delta_d):
+        
         if action==0:
             self.control.throttle = 0.0
             self.control.brake = 1.0
@@ -100,6 +135,7 @@ class CollisionControl:
         elif action==2:
             self.control.throttle/=2
 
+        self.collect_data([distance,delta_d],action)
     def update_target_lane(self):
         lane_obstacles = self.traffic_controller.lane_obstacles
         lane_id = self.target_lane
