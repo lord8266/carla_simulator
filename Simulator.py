@@ -267,6 +267,7 @@ class Simulator:
        
         
         if (curr-self.last_stop)>3000: #and self.traffic_controller.override:
+            self.vehicle_controller.destroy_movement()
             self.re_level()
             self.last_stop = curr
 

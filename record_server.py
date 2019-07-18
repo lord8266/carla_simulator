@@ -14,11 +14,14 @@ class RecordServer:
 
         self.simulator = simulator
         self.state  = State.READY
-        self.collector = data_collector.DataCollector(simulator,'record_data',100,10,50)
+        self.collector = data_collector.DataCollector('record_data',100,10,50,debug=False)
         self.waiting  = False
+        simulator.client.start_recorder("recording.log")
+        self.start_time = pygame.time.get_ticks()
+        self.enabled = True
     def start_recording(self):
-
-        if self.state==State.READY and not self.waiting:
+        curr =pygame.time.get_ticks()
+        if self.state==State.READY and not self.waiting and self.enabled and (curr-self.start_time)<1000000:
             self.state = State.RECORDING
             self.start_time = np.int64(min(0,pygame.time.get_ticks()-2000)/1000)
 

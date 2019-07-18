@@ -7,7 +7,7 @@ import scipy.misc
 
 class DataCollector:
 
-    def __init__(self,simulator,folder='record_data',max_saves=2000,buffer_max=50,save_size=500):
+    def __init__(self,folder='record_data',max_saves=2000,buffer_max=50,save_size=500,debug=True):
 
         self.prev = 0
         self.prev_time = pygame.time.get_ticks()
@@ -24,7 +24,8 @@ class DataCollector:
         self.save_size = save_size
         self.load()
         self.max_reached = False
-
+        self.debug = debug
+        
     def save_data(self,data,target,as_image=False):
         
 
@@ -55,7 +56,7 @@ class DataCollector:
 
                 np.save(f'{self.folder}/data{self.curr_file}',data)
                 np.save(f'{self.folder}/targets',targets)
-                print(f"{self.folder}: Saved in data{self.curr_file} ,SaveCnt: {self.save_cnt}")
+                self.debug_f(f"{self.folder}: Saved in data{self.curr_file} ,SaveCnt: {self.save_cnt}")
                 f = open(f'{self.folder}/data.conf','w')
                 f.write(f'{self.curr_file} {self.save_cnt}\n')
                 f.close()
@@ -63,9 +64,13 @@ class DataCollector:
                 self.target_buffer =[]
                 self.save_cnt+=1
             else:
-                print(f"{self.folder}: Recived Data: {self.buffer_max-len(self.data_buffer) } more calls to save!")
+                self.debug_f(f"{self.folder}: Recived Data: {self.buffer_max-len(self.data_buffer) } more calls to save!")
             
             
+    def debug_f(self,*args,**kwargs):
+
+        if self.debug:
+            print(*args,**kwargs)
 
 
             
@@ -77,5 +82,5 @@ class DataCollector:
             f = open(f'{self.folder}/data.conf')
             self.curr_file,self.save_cnt = [int(s) for s in f.read()[:-1].split()]
             f.close() 
-            print("Found Conf, Curr_File:",self.curr_file,"Save_Cnt:",self.save_cnt)
+            self.debug_f("Found Conf, Curr_File:",self.curr_file,"Save_Cnt:",self.save_cnt)
             self.save_cnt+=1

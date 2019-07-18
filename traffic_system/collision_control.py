@@ -39,7 +39,10 @@ class CollisionControl:
         self.state = LaneState.SAME_LANE
         self.curr_lane = self.traffic_controller.simulator.vehicle_variables.lane_id
         self.record_server = record_server.RecordServer(trc.simulator)
+        self.record_server.enabled=False
         self.check_completion=False
+        self.last_state = self.state
+
     def update(self):
         if self.state==LaneState.SAME_LANE:
             self.update_same_lane()
@@ -48,9 +51,13 @@ class CollisionControl:
             self.update_target_lane()
 
         self.update_lane_change()
-        self.try_lane_change()
+        # self.try_lane_change()
         self.check_lane_change_completion()
         self.record_server.update()
+
+        if self.state!=self.last_state:
+            print(self.state)
+            self.last_state = self.state
 
     def update_same_lane(self,type_=1):
 
@@ -61,27 +68,37 @@ class CollisionControl:
             if lane_obstacles[lane_id]:
                 front = lane_obstacles[lane_id][0]
                 self.record_server.start_recording()
-                d = front.distance
-                if type_==1:
-                    if 6.5<d<10.5 and front.delta_d<0:
-                        if self.traffic_controller.simulator.vehicle_variables.vehicle_velocity_magnitude>1:
-                            self.control.throttle/=2
+                distance = front.distance
 
-                    if 4.5<d<6.5 and front.delta_d<0:
-                        self.control.throttle =0.3
+                if type_==1:
+                    if 6.5<distance<10.5 and front.delta_d<0:
+                        if self.traffic_controller.simulator.vehicle_variables.vehicle_velocity_magnitude>1:
+                            self.modify_control(2,distance,front.delta_d)
+
+                    if 4.5<distance<6.5 and front.delta_d<0:
+                        self.modify_control(1,distance,front.delta_d)
                             
 
-                    if d<4.5:
-                        self.control.throttle = 0.0
-                        self.control.brake = 1.0
+                    if distance<4.5:
+                        self.modify_control(0,distance,front.delta_d)
                         self.record_server.stop_recording(2)
                         # print("Donned")
                 else:
-                     if d<1:
-                            self.control.throttle = 0.0
-                            self.control.brake = 1.0
+                     if distance<1:
+                            self.modify_control(0,distance,front.delta_d)
                             # print("Donned")
                             self.record_server.stop_recording(2)
+
+    def modify_control(self,action,distance,delta_d):
+
+        if action==0:
+            self.control.throttle = 0.0
+            self.control.brake = 1.0
+        elif action==1:
+            self.control.throttle =0.3
+        
+        elif action==2:
+            self.control.throttle/=2
 
     def update_target_lane(self):
         lane_obstacles = self.traffic_controller.lane_obstacles
@@ -90,11 +107,14 @@ class CollisionControl:
             if lane_obstacles[lane_id]:
                 front = lane_obstacles[lane_id][0]
 
-                d = front.distance
+                distance = front.distance
 
-                if d<4 and front.delta_d<0.01:
-                    self.control.throttle = 0.0
-                    self.control.brake = 1.0
+                if 3<distance<5 and front.delta_d<0.01:
+                    self.modify_control(1,distance,front.delta_d)
+                
+                if distance<3:
+                    self.modify_control(0,distance,front.delta_d)
+
                     
     def update_lane_change(self):
         lc = self.traffic_controller.simulator.navigation_system.local_route_waypoints
