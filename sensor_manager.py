@@ -52,6 +52,18 @@ class SensorManager():
         self.collision_sensor = self.simulator.world.spawn_actor(collision_sensor_blueprint,carla.Transform(),attach_to=self.simulator.vehicle_controller.vehicle)
         self.collision_sensor.listen(lambda event: self.collide_call(event) )
     
+    def initialize_lidar_sensor(self):
+        lidar_sensor_blueprint = self.simulator.blueprint_library.find('sensor.sensor.lidar.ray_cast')
+        lidar_sensor_blueprint.set_attribute('range', '5000')
+        lidar_sensor_blueprint.set_attribute('points_per_second', '56000')
+        lidar_sensor_blueprint.set_attribute('channles', '32')
+        lidar_sensor_blueprint.set_attribute('range', '5000')
+        bound_y = 0.5 + self.simulator.vehicle_controller.vehicle.bounding_box.extent.y
+        self.lidar_sensor = self.simulator.world.spawn_actor(lidar_sensor_blueprint,carla.Transform(carla.Location(x=-1, y=-bound_y, z=0.5)),attach_to=self.simulator.vehicle_controller.vehicle)
+        self.lidar_sensor.listen(lambda event: self.lidar_call(event) )
+    
+    def lidar_call(self,event):
+        pass
     def collide_call(self,event):
         if str(event.other_actor).find('vehicle')!=-1:
             self.simulator.collide_cnt+=1

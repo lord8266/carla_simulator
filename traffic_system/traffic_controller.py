@@ -231,6 +231,11 @@ class TrafficController:
         s = ""
         if same_lane:
             data_same = same_lane.distance,same_lane.delta_d
+
+            if same_lane.distance<6:
+                self.disableAI()
+                self.simulator.vehicle_controller.destroy_movement()
+                self.simulator.re_level(random_spawn=True)
             s+=f'SameLane: {str(same_lane)}\n'
         else:
             data_same = 100,0
@@ -251,14 +256,19 @@ class TrafficController:
         #     if same_lane.distance<20 and self.ai_observation[0]<self.ai_observation[2]:
         #         self.simulator.lane_ai.lane_changer.check_new_lane(force=True)
         
-        self.check_ai(same_lane,data_future)
+        senders_data = None
+        if same_lane:
+            senders_data = same_lane
+        elif data_future:
+            senders_data = data_future
+        self.check_ai(senders_data)
 
 
         return s
 
-    def check_ai(self,same_lane,data_future):
+    def check_ai(self,senders_data):
         
-        if same_lane or data_future:
+        if senders_data:
             self.enableAI()
         else:
             self.disableAI()

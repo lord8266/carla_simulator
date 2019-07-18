@@ -256,13 +256,13 @@ class Simulator:
         curr = pygame.time.get_ticks()
         vel = self.vehicle_variables.vehicle_velocity_magnitude
         traffic_light = self.sensor_manager.traffic_light_sensor()
-        if ((vel>0.05) or traffic_light==0) or self.traffic_controller.ai_enabled==True:
+        if vel>0.5:
             self.last_stop = curr
             
        
         
         if (curr-self.last_stop)>5000:
-            self.re_level()
+            self.re_level(random_spawn=True)
             self.last_stop = curr
         # if (traffic_light == 0) and not self.vehicle_variables.vehicle_waypoint.is_intersection:
         #     control = self.vehicle_controller.control
@@ -280,7 +280,7 @@ class Simulator:
         
         if self.collide_cnt>0:
             self.collide_cnt-=1
-            self.collide_callback()
+            # self.collide_callback()
         
         return self.observation,reward,status!=Status.RUNNING,{}
 
@@ -345,16 +345,25 @@ class Simulator:
         return self.get_observation()
 
     def re_level(self,random_spawn=False):
-            
-        self.start_point, self.end_point =np.random.randint(0,len(self.navigation_system.spawn_points),size=2)
-        self.start_point, self.end_point = self.navigation_system.spawn_points[self.start_point],self.navigation_system.spawn_points[self.end_point]
-        # self.start_point, self.end_point =22,40
-        self.navigation_system.make_ideal_route_r(self.start_point,self.end_point)
+        
+        if random_spawn:
+            self.start_point,self.end_point =np.random.randint(0,len(self.navigation_system.spawn_points),size=2)
+            self.start_point, self.end_point = self.navigation_system.spawn_points[self.start_point],self.navigation_system.spawn_points[self.end_point]
+            # self.start_point, self.end_point =22,40
+            self.navigation_system.make_ideal_route_r(self.start_point,self.end_point)
 
       
           
-                
+        else:
+            self.start_point = self.traffic_controller.get_far_away()
+            self.end_point =   np.random.randint(0,len(self.navigation_system.spawn_points))
+            d = navigation_system.NavigationSystem.get_distance(self.start_point.location,self.end_point.location,res=1)
+            while d<15:
+                self.end_point =  self.navigation_system.spawn_points[np.random.randint(0,len(self.navigation_system.spawn_points))]
+                d = navigation_system.NavigationSystem.get_distance(self.start_point.location,self.end_point.location,res=1)
+
         self.on_restart()
+
     
     def collide_callback(self):
         

@@ -93,10 +93,10 @@ class VehicleController:
     
     def apply_control(self):
         if self.cmp_control():
-            if self.simulator.key_control:
-                print("Imitate:",self.control)
-            else:
-                pass
+            # if self.simulator.key_control:
+            print("Imitate:",self.control)
+            # else:
+                # pass
             self.vehicle.apply_control(self.control)
             VehicleController.equate_controls(self.prev_control,self.control)
             self.changed_state = True

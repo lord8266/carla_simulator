@@ -19,6 +19,7 @@ import reward_system
 HIDDEN1_UNITS = 20
 HIDDEN2_UNITS = 18
 import os
+import scipy.misc
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
@@ -154,6 +155,7 @@ class SpeedControlEnvironment:
 
     
     def modify_control(self,action):
+        
         mod = self.actions[action]
         if mod<-100:
             mod = abs(mod+100)/100
@@ -293,7 +295,6 @@ class SpeedControlAI:
         self.load()
 
         self.update_target_model()
-
         self.save_file = save_file
         self.environment = environment
         self.prev_state = None
@@ -301,9 +302,9 @@ class SpeedControlAI:
         self.step =0
         self.start_episode=1
         self.collector = collision_data_collector.DataCollector(environment.traffic_controller.simulator,'collision_data',500,100,100)
-        self.image_collector = collision_data_collector.DataCollector(environment.traffic_controller.simulator,'collision_images',600,25,10)
+        self.image_collector = collision_data_collector.DataCollector(environment.traffic_controller.simulator,'collision_images',600,25,50)
         self.prev_data = 20
-
+        self.image_size = (88,200,3)
         self.prev_time = pygame.time.get_ticks()
 
     def update_target_model(self):
@@ -335,6 +336,8 @@ class SpeedControlAI:
 
             if (curr-self.prev_time)>300:
                 image = self.environment.traffic_controller.simulator.game_manager.array
+                image = scipy.misc.imresize(image, [self.image_size[0],
+                                                      self.image_size[1]])
                 self.image_collector.save_image(image,target)
                 self.prev_time = curr
             self.prev_data = state[0][0]
@@ -367,7 +370,7 @@ class SpeedControlAI:
                 return random.randint(3,5)
 
 
-        if 0.4 <= self.epsilon:
+        if True:
             # return random.randint(0,5)
             s_obs = state[0]
             car_distance = abs(s_obs[0])
@@ -523,7 +526,7 @@ class SpeedControlAI:
         prev_state = self.prev_state
         action = self.act(prev_state)
         print("action : ",action, end="   ")
-        self.collect_data(prev_state,action)
+        # self.collect_data(prev_state,action)
         state,reward = self.environment.modify_control(action)
         if failed:
             reward-=1500
