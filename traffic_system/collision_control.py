@@ -180,106 +180,95 @@ class SpeedControlEnvironment:
         car_delta = s_obs[1]/10
 
         if car_distance>=11:
-            if self.control.throttle >= 0.5 and car_delta<0.2:
-                curr_reward += 125
-            # if 0.02<=car_delta:
-            #     curr_reward -= 50
-            # elif 0.02>car_delta:
-            #     curr_reward += 50
-            if car_delta<-0.5:
-                curr_reward += 50 
+            # if self.control.throttle >= 0.5 and car_delta<-0.4:
+            #     curr_reward += 1.25
+            elif car_delta<-0.5:
+                curr_reward += 0.5
             elif -0.5<=car_delta<-0.2:
-                curr_reward += 100
+                curr_reward += 1
             elif -0.2<=car_delta<-0.04:
-                curr_reward += 25
+                curr_reward += 0.25
             elif -0.04<=car_delta<0.2:
-                curr_reward -= 50
+                curr_reward -= 0.5
             elif 0.2<=car_delta:
-                curr_reward -= 75
+                curr_reward -= 1 
 
         elif 8<car_distance<11:
-            if self.control.throttle >= 0.3 and -0.4<=car_delta<0.2:
-                curr_reward += 125
-            # if -0.2<=car_delta<=0.05:
-            #     curr_reward += 75
-            # elif -0.2>car_delta>-0.4:
-            #     curr_reward += 25
-            # elif -0.4>=car_delta:
-            #     curr_reward -= 75
-            # elif 0.05<car_delta:
-            #     curr_reward -= 75
+            # if self.control.throttle >= 0.3 and -0.4<=car_delta<0.2:
+            #     curr_reward += 1.25
             if car_delta<-0.5:
-                curr_reward -= 300 
+                curr_reward -= 2 
+            elif -0.5<=car_delta<-0.2 and self.control.throttle > 0.5:
+                curr_reward -= 1
             elif -0.5<=car_delta<-0.2:
-                curr_reward += 150
-            elif -0.2<=car_delta<-0.05:
-                curr_reward += 450
+                curr_reward += 2.5
+            elif -0.2<=car_delta<-0.09:
+                curr_reward += 5
             elif -0.09<=car_delta<0.09 and s_obs[2]>3.75:
-                curr_reward += 650
+                curr_reward += 4
             elif 0.09<=car_delta<0.2:
-                curr_reward -= 200
-            elif 0.1<=car_delta:
-                curr_reward -= 400
+                curr_reward -= 2
+            elif 0.2<=car_delta:
+                curr_reward -= 4
 
         elif 6<=car_distance<=8:
-            # if -0.5<=car_delta<-0.2:
-            #     curr_reward -= 10
-            # elif -0.02<=car_delta<=0:
-            #     curr_reward += 150 
-            # elif -0.02<=car_delta<=0:
-            #     curr_reward += 150
-            # elif 0.02>car_delta>0:
-            #     curr_reward += 100
-            # elif 0.1>car_delta>0.02:
-            #     curr_reward -= 50
-            # elif 0.1<car_delta:
-            #     curr_reward -= 100
-            # elif -0.1>car_delta:
-            #     curr_reward -= 150
-            if car_delta<-0.5:
-                curr_reward -= 800 
+            if car_delta<-0.5 and self.control.throttle > 0.0:
+                curr_reward -= 5
+            elif car_delta<-0.5:
+                curr_reward += 1
+            elif -0.5<=car_delta<-0.2 and self.control.throttle > 0.0:
+                curr_reward -= 4
             elif -0.5<=car_delta<-0.2:
-                curr_reward -= 600
+                curr_reward += 2
+            elif -0.2<=car_delta<-0.08 and self.control.throttle > 0.5:
+                curr_reward -= 1
             elif -0.2<=car_delta<-0.08:
-                curr_reward += 50
+                curr_reward += 2
+            elif -0.08<=car_delta<0.0 and self.control.throttle > 0.5:
+                curr_reward -= 4.5
             elif -0.08<=car_delta<0.08:
-                curr_reward += 750
+                curr_reward += 5
             elif 0.08<=car_delta<0.2:
-                curr_reward -= 200
+                curr_reward -= 2
             elif 0.1<=car_delta:
-                curr_reward -= 350
+                curr_reward -= 3
         
         elif 6>car_distance>4.8:
-            if self.control.brake > 0.0 and car_delta<0.0:
-                curr_reward += 125
-            # if -0.02<car_delta<=0.02:
-            #     curr_reward += 75
-            # elif 0.02<car_delta:
-            #     curr_reward -= 10
-            # elif -0.02>=car_delta:
-            #     curr_reward -= 25
-            if car_delta<-0.5:
-                curr_reward -= 1000 
-            elif -0.5<=car_delta<-0.2:
-                curr_reward -= 800
-            elif -0.2<=car_delta<-0.02:
-                curr_reward -= 400
-            elif -0.02<=car_delta<0.04:
-                curr_reward += 600
-            elif 0.04<=car_delta<0.2:
-                curr_reward -= 50
-            elif 0.1<=car_delta:
-                curr_reward -= 200
+             self.control.brake > 0.0:
+                curr_reward += 5
+            else:
+                curr_reward -= 5
+            # if self.control.brake > 0.0 and car_delta<0.0:
+            #     curr_reward += 1.25
+            # if car_delta<-0.5:
+            #     curr_reward -= 10 
+            # elif -0.5<=car_delta<-0.2 and self.control.throttle > 0.5:
+            #     curr_reward -= 8
+            # elif -0.5<=car_delta<-0.2:
+            #     curr_reward += 1
+            # elif -0.2<=car_delta<-0.04 and self.control.throttle > 0.5:
+            #     curr_reward -= 1
+            # elif -0.2<=car_delta<-0.02:
+            #     curr_reward += 3
+            # elif -0.02<=car_delta<0 and self.control.throttle > 0.5:
+            #     curr_reward -= 3
+            # elif -0.02<=car_delta<0.04:
+            #     curr_reward += 6
+            # elif 0.04<=car_delta<0.2:
+            #     curr_reward -= 0.5
+            # elif 0.1<=car_delta:
+            #     curr_reward -= 2
 
-        elif car_distance<=4.8:
-            if self.control.brake > 0.0 and car_delta<=0.0:
-                curr_reward += 125
-            elif car_delta<0.0 and self.control.throttle > 0.0:
-                curr_reward -= 500
+        elif 4.8>=car_distance:
+            if self.control.brake > 0.0:
+                curr_reward += 5
+            else:
+                curr_reward -= 5
+                
 
         # if car_distance == 100:
         #     curr_reward = 0
-        print("reward :","%4.1d"%curr_reward, "\t\tobs :"," %5.2f"%(s_obs[0]),"  %5.2f"%(s_obs[1]),"  %5.2f"%(s_obs[2]), end="")
+        print("reward :","%5.2f"%curr_reward, "\t\tobs :"," %5.2f"%(car_distance),"  %5.2f"%(car_delta),"  %5.2f"%(s_obs[2]), end="")
         return self.get_observation(),curr_reward
             
 
@@ -298,18 +287,18 @@ class SpeedControlAI:
         self.epsilon_decay = 0.995
         self.model = self.build_model()
 
-        self.target_model = self.build_model()
+        # self.target_model = self.build_model()
 
         self.reward_tracker = reward_system.RewardTracker(self,25,100000,prefix='traffic_system')
         self.start =0
         self.load()
 
-        self.update_target_model()
+        # self.update_target_model()
 
         self.save_file = save_file
         self.environment = environment
         self.prev_state = None
-        self.batch_size =32
+        self.batch_size = 32*15
         self.step =0
         self.start_episode=1
         self.random = random.random()
@@ -320,10 +309,10 @@ class SpeedControlAI:
 
         self.prev_time = pygame.time.get_ticks()
 
-    def update_target_model(self):
-        # copy weights from model to target_model
-        self.target_model.set_weights(self.model.get_weights())
-        # print("\nTarget model updated")
+    # def update_target_model(self):
+    #     # copy weights from model to target_model
+    #     self.target_model.set_weights(self.model.get_weights())
+    #     # print("\nTarget model updated")
         
     def build_model(self):
 
@@ -474,52 +463,23 @@ class SpeedControlAI:
         act_values = self.model.predict(state)
         return np.argmax(act_values[0])
         
-    # def replay(self, batch_size):
-
-    #     minibatch = random.sample(self.memory, batch_size)
-    #     minibatch=np.array(minibatch)
-    #     rewards=minibatch[:,2]
-    #     mean=np.mean(rewards)
-    #     std=np.std(rewards)
-    #     minibatch[:,2]=(rewards-mean)/(std+1e-10)
-
-    #     for state, action, reward, next_state, done in minibatch:
-    #         target = reward
-    #         if not done:
-    #             target = (reward + self.gamma *
-    #                       np.amax(self.model.predict(next_state)[0]))
-    #         target_f = self.model.predict(state)
-    #         target_f[0][action] = target
-    #         self.model.fit(state, target_f, epochs=1, verbose=0)
-    #     if self.episode % 20 == 0 and self.start_episode:
-    #         self.start_episode = 0
-    #         if self.epsilon > self.epsilon_min:
-    #             self.epsilon *= self.epsilon_decay
-    #         else:
-    #             self.epsilon = 0.8
-    #     elif self.episode % 20 != 0 :
-    #         self.start_episode = 1
-
     def replay(self, batch_size):
 
         minibatch = random.sample(self.memory, batch_size)
-        minibatch=np.array(minibatch)
-        rewards=minibatch[:,2]
-        mean=np.mean(rewards)
-        std=np.std(rewards)
-        minibatch[:,2]=(rewards-abs(mean))/(std+1e-10)
-        for state, action, reward, next_state, done in minibatch:
-            target = self.model.predict(state)
-            if done:
-                target[0][action] = reward
-            else:
-                # a = self.model.predict(next_state)[0]
-                t = self.target_model.predict(next_state)[0]
-                target[0][action] = reward + self.gamma * np.amax(t)
-                # target[0][action] = reward + self.gamma * t[np.argmax(a)]
-            # print("\ntarget",reward,t)
-            self.model.fit(state, target, epochs=1, verbose=0)
+        # minibatch=np.array(minibatch)
+        # rewards=minibatch[:,2]
+        # mean=np.mean(rewards)
+        # std=np.std(rewards)
+        # minibatch[:,2]=(rewards-mean)/(std+1e-10)
 
+        for state, action, reward, next_state, done in minibatch:
+            target = reward
+            if not done:
+                target = (reward + self.gamma *
+                          np.amax(self.model.predict(next_state)[0]))
+            target_f = self.model.predict(state)
+            target_f[0][action] = target
+            self.model.fit(state, target_f, epochs=1, verbose=0)
         if self.episode % 20 == 0 and self.start_episode:
             self.start_episode = 0
             if self.epsilon > self.epsilon_min:
@@ -528,6 +488,37 @@ class SpeedControlAI:
                 self.epsilon = 0.8
         elif self.episode % 20 != 0 :
             self.start_episode = 1
+
+    # def replay(self, batch_size):
+
+    #     minibatch = random.sample(self.memory, batch_size)
+    #     # minibatch=np.array(minibatch)
+    #     # rewards=minibatch[:,2]
+    #     # print("rewards: ",rewards[2:15])
+    #     # mean=np.mean(rewards)
+    #     # std=np.std(rewards)
+    #     # minibatch[:,2]=(rewards-abs(mean))/(std+1e-10)
+    #     # print("normalised rewards: ",(minibatch[:,2])[2:15])
+    #     for state, action, reward, next_state, done in minibatch:
+    #         target = self.model.predict(state)
+    #         if done:
+    #             target[0][action] = reward
+    #         else:
+    #             # a = self.model.predict(next_state)[0]
+    #             t = self.target_model.predict(next_state)[0]
+    #             target[0][action] = reward + self.gamma * np.amax(t)
+    #             # target[0][action] = reward + self.gamma * t[np.argmax(a)]
+    #         # print("\ntarget",reward,t)
+    #         self.model.fit(state, target, epochs=1, verbose=0)
+
+    #     if self.episode % 20 == 0 and self.start_episode:
+    #         self.start_episode = 0
+    #         if self.epsilon > self.epsilon_min:
+    #             self.epsilon *= self.epsilon_decay
+    #         else:
+    #             self.epsilon = 0.8
+    #     elif self.episode % 20 != 0 :
+    #         self.start_episode = 1
 
             
 
@@ -550,21 +541,22 @@ class SpeedControlAI:
         self.prev_state =np.reshape(self.environment.get_observation(),[1,self.state_size]) 
 
     def run_epoch(self,done=False,failed=False):
-        batch_size = self.batch_size
         prev_state = self.prev_state
         action = self.act(prev_state)
         print(action, end="   ")
         # self.collect_data(prev_state,action)
         state,reward = self.environment.modify_control(action)
-        if failed:
-            reward-=5000
-        # print("State:"+str(state),"Reward:" + str(reward),sep='\n',end='\n\n')
         print()
+        if failed and action<3:
+            print("\nhit")
+            reward-=50
+        # print("State:"+str(state),"Reward:" + str(reward),sep='\n',end='\n\n')
+        
         state = np.reshape(state, [1, self.state_size])
         self.remember(prev_state, action, reward, state, done)
 
-        if len(self.memory) > batch_size:
-            self.replay(batch_size)
+        if len(self.memory) > self.batch_size:
+            self.replay(self.batch_size)
 
         self.prev_state = state
         self.total_rewards+=reward
@@ -572,7 +564,7 @@ class SpeedControlAI:
         #     print(f"Step:{self.step}, Rewards: {self.total_rewards}")
 
         if done:
-            self.update_target_model()
+            # self.update_target_model()
             self.reward_tracker.end_episode(self.total_rewards/(self.step+1))
             print(f"\n\n\nComplete Episode {self.episode}, Total Rewards: {self.total_rewards/(self.step+1)}, Epsilon: {self.epsilon}")
             self.episode+=1
