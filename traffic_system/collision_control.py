@@ -158,7 +158,7 @@ class SpeedControlEnvironment:
         if mod<-100:
             mod = abs(mod+100)/100
             self.control.brake = mod 
-            self.control.throttle = 0
+            self.control.throttle = 0.0
         elif mod <0:
             mod = abs(mod)/100
             self.control.throttle*=mod
@@ -178,18 +178,28 @@ class SpeedControlEnvironment:
         curr_reward = 0
         car_distance = abs(s_obs[0])*3
         car_delta = s_obs[1]/10
+        if car_distance>50:
+            self.control.throttle = 0.99
 
-        if car_distance>=11:
+        elif car_distance>15:
+            if self.control.throttle >= 0.5:
+                curr_reward += 5
+            elif self.control.throttle >= 0.0:
+                curr_reward += 3
+            else:
+                curr_reward -= 3
+
+        elif 15>=car_distance>=11:
             # if self.control.throttle >= 0.5 and car_delta<-0.4:
             #     curr_reward += 1.25
             if car_delta<-0.5:
-                curr_reward += 0.5
+                curr_reward += 2
             elif -0.5<=car_delta<-0.2:
-                curr_reward += 1
-            elif -0.2<=car_delta<-0.04:
-                curr_reward += 0.25
-            elif -0.04<=car_delta<0.2:
-                curr_reward -= 0.5
+                curr_reward += 5
+            elif -0.2<=car_delta<-0.01:
+                curr_reward += 3.5
+            elif -0.01<=car_delta<0.2:
+                curr_reward -= 1
             elif 0.2<=car_delta:
                 curr_reward -= 1 
 
@@ -265,9 +275,6 @@ class SpeedControlEnvironment:
             else:
                 curr_reward -= 5
                 
-
-        # if car_distance == 100:
-        #     curr_reward = 0
         print("reward :","%5.2f"%curr_reward, "\t\tobs :"," %5.2f"%(car_distance),"  %5.2f"%(car_delta),"  %5.2f"%(s_obs[2]), end="")
         return self.get_observation(),curr_reward
             
@@ -298,7 +305,7 @@ class SpeedControlAI:
         self.save_file = save_file
         self.environment = environment
         self.prev_state = None
-        self.batch_size = 32*15
+        self.batch_size = 32*8
         self.step =0
         self.start_episode=1
         self.random = random.random()
@@ -549,7 +556,7 @@ class SpeedControlAI:
         print()
         if failed and action<3:
             print("\nhit")
-            reward-=50
+            reward-=20
         # print("State:"+str(state),"Reward:" + str(reward),sep='\n',end='\n\n')
         
         state = np.reshape(state, [1, self.state_size])
