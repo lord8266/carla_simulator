@@ -493,7 +493,7 @@ class SpeedControlAI:
             if self.epsilon > self.epsilon_min:
                 self.epsilon *= self.epsilon_decay
             else:
-                self.epsilon = 0.8
+                self.epsilon = 0.4
         elif self.episode % 20 != 0 :
             self.start_episode = 1
 
