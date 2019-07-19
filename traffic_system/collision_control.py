@@ -182,7 +182,7 @@ class SpeedControlEnvironment:
         if car_distance>=11:
             # if self.control.throttle >= 0.5 and car_delta<-0.4:
             #     curr_reward += 1.25
-            elif car_delta<-0.5:
+            if car_delta<-0.5:
                 curr_reward += 0.5
             elif -0.5<=car_delta<-0.2:
                 curr_reward += 1
@@ -234,7 +234,7 @@ class SpeedControlEnvironment:
                 curr_reward -= 3
         
         elif 6>car_distance>4.8:
-             self.control.brake > 0.0:
+            if self.control.brake > 0.0:
                 curr_reward += 5
             else:
                 curr_reward -= 5
