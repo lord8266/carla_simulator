@@ -313,7 +313,7 @@ class Obstacle:
         obstacle_vector = np.array(misc.vector(vehicle_pos,self.location))
 
         dot = obstacle_vector.dot(forward_vector)
-
+        dot = dot/np.linalg.norm(dot)
         arc_cos = np.degrees(np.arccos(dot))
        
         self.angle  =  arc_cos

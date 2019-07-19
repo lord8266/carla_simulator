@@ -153,7 +153,7 @@ class SpeedControlEnvironment:
         return self.traffic_controller.ai_observation
 
     
-    def modify_control(self,action):
+    def modify_control(self,action,step_observation):
         mod = self.actions[action]
         if mod<-100:
             mod = abs(mod+100)/100
@@ -166,13 +166,12 @@ class SpeedControlEnvironment:
             mod+=100
             mod = mod/100
             self.control.throttle*=mod
-        s_obs = self.get_observation()
+        s_obs = step_observation[0]
         # print("episode:", self.ai.episode, "  prev_episode:", self.ai.prev_episode, "  epsilon:", self.ai.epsilon)
         # if self.control.throttle == 0:
         #     print("brake :", self.control.brake, "obs :", s_obs)
         # else:
         #     print("throttle :", self.control.throttle, "obs :", s_obs)
-        s_obs = self.get_observation()
 
 
         curr_reward = 0
@@ -184,10 +183,10 @@ class SpeedControlEnvironment:
         elif car_distance>15:
             if self.control.throttle >= 0.5:
                 curr_reward += 5
-            elif self.control.throttle >= 0.0:
+            elif self.control.throttle > 0.0:
                 curr_reward += 3
             else:
-                curr_reward -= 3
+                curr_reward -= 5
 
         elif 15>=car_distance>=11:
             # if self.control.throttle >= 0.5 and car_delta<-0.4:
@@ -199,9 +198,9 @@ class SpeedControlEnvironment:
             elif -0.2<=car_delta<-0.01:
                 curr_reward += 3.5
             elif -0.01<=car_delta<0.2:
-                curr_reward -= 1
+                curr_reward -= 4
             elif 0.2<=car_delta:
-                curr_reward -= 1 
+                curr_reward -= 5 
 
         elif 8<car_distance<11:
             # if self.control.throttle >= 0.3 and -0.4<=car_delta<0.2:
@@ -211,11 +210,11 @@ class SpeedControlEnvironment:
             elif -0.5<=car_delta<-0.2 and self.control.throttle > 0.5:
                 curr_reward -= 1
             elif -0.5<=car_delta<-0.2:
-                curr_reward += 2.5
+                curr_reward += 1.5
             elif -0.2<=car_delta<-0.09:
-                curr_reward += 5
+                curr_reward += 3
             elif -0.09<=car_delta<0.09 and s_obs[2]>3.75:
-                curr_reward += 4
+                curr_reward += 2
             elif 0.09<=car_delta<0.2:
                 curr_reward -= 2
             elif 0.2<=car_delta:
@@ -236,8 +235,10 @@ class SpeedControlEnvironment:
                 curr_reward += 2
             elif -0.08<=car_delta<0.0 and self.control.throttle > 0.5:
                 curr_reward -= 4.5
+            elif -0.08<=car_delta<0.08 and self.control.throttle > 0.0:
+                curr_reward += 10
             elif -0.08<=car_delta<0.08:
-                curr_reward += 5
+                curr_reward += 3
             elif 0.08<=car_delta<0.2:
                 curr_reward -= 2
             elif 0.1<=car_delta:
@@ -354,10 +355,10 @@ class SpeedControlAI:
             print("Not Saving")
 
     def act(self, state):
-        if self.randomcounter == 0:
-            self.random = random.random()
-        self.randomcounter += 1
-        self.randomcounter %= 5
+        # if self.randomcounter == 0:
+        #     self.random = random.random()
+        # self.randomcounter += 1
+        # self.randomcounter %= 5
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP]:
@@ -382,7 +383,7 @@ class SpeedControlAI:
                 return random.randint(3,5)
 
 
-        if self.random<self.epsilon:
+        if random.random()<self.epsilon:
             print("action  :",end = " ")
             return random.randint(0,5)
             s_obs = state[0]
@@ -552,11 +553,11 @@ class SpeedControlAI:
         action = self.act(prev_state)
         print(action, end="   ")
         # self.collect_data(prev_state,action)
-        state,reward = self.environment.modify_control(action)
+        state,reward = self.environment.modify_control(action,prev_state)
         print()
-        if failed and action<3:
+        if failed and action<3 and prev_state[0][0]<50:
             print("\nhit")
-            reward-=20
+            reward -= 10
         # print("State:"+str(state),"Reward:" + str(reward),sep='\n',end='\n\n')
         
         state = np.reshape(state, [1, self.state_size])

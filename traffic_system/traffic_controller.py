@@ -241,6 +241,14 @@ class TrafficController:
         else:
             data_next = 100,0
             s+='DataFuture: None\n'
+        
+        # send_data = (100,0)
+        # if same_lane:
+        #     send_data = data_same
+        # elif data_future:
+        #     send_data = data_next
+
+            
         rounded = [0,0]
         rounded[0] = round(data_same[0]/3,2)
         rounded[1] = round(data_same[1]*10,2)
