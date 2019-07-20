@@ -35,7 +35,8 @@ class TrafficController:
         self.lane_obstacles = {}
         self.collision_control = collision_control.CollisionControl(self)
         self.override = False
-        
+        self.last_restart = pygame.time.get_ticks()
+
     def add_vehicles(self):
         blueprints = self.simulator.world.get_blueprint_library().filter('vehicle.*')
         blueprints = [x for x in blueprints if int(x.get_attribute('number_of_wheels')) == 4]
@@ -46,24 +47,42 @@ class TrafficController:
         FutureActor = carla.command.FutureActor
         batch = []
         actor_list =[]
-        for n, transform in enumerate(spawn_points):
-            if n >= self.max:
-                break
+        prev_list = []
+        for n in range(self.max):
+            
             blueprint = random.choice(blueprints)
             if blueprint.has_attribute('color'):
                 color = random.choice(blueprint.get_attribute('color').recommended_values)
                 blueprint.set_attribute('color', color)
+
             blueprint.set_attribute('role_name', 'autopilot')
+
+            i = random.randrange(0,len(spawn_points))
+            while i in prev_list:
+                i = random.randrange(0,len(spawn_points))
+            transform = spawn_points[i]
+            prev_list.append(i)
             batch.append(SpawnActor(blueprint, transform).then(SetAutopilot(FutureActor, True)))
 
         for response in self.simulator.client.apply_batch_sync(batch):
             # print(response)
             actor_list.append(response.actor_id)
+        self.actor_list = actor_list
         self.get_actors(actor_list)
-
+        return prev_list
     def get_actors(self,actor_list):
         vehicles = list(self.simulator.world.get_actors(actor_list))
         self.vehicles = vehicles
+
+    def reset_vehicle(self,vehicle_actor,pos,ret_batch=False):
+        id_ =vehicle_actor.id
+        batch = [carla.command.ApplyVelocity(id_, carla.Vector3D()),
+        carla.command.ApplyTransform(id_,pos),
+        carla.command.ApplyAngularVelocity(id_, carla.Vector3D()) ]
+        if ret_batch:
+            return batch
+        else:
+            self.simulator.client.apply_batch(batch)
 
     def update_distances(self):
         curr = pygame.time.get_ticks()
@@ -74,7 +93,19 @@ class TrafficController:
        
         for v in self.vehicles:
             
-            p2 = v.get_location()
+            t = v.get_transform()
+            
+            p2 = t.location
+            w_t = self.simulator.map.get_waypoint(p2)
+
+            # if abs(w_t.transform.location.z-p2.z)>10:
+            #     self.reset_vehicle(v,self.get_far_away(15,v))
+
+            # elif abs(navigation_system.NavigationSystem.transform_angle(t.rotation.roll%360)- navigation_system.NavigationSystem.transform_angle(w_t.transform.rotation.roll%360))>45:
+            #     self.reset_vehicle(v,self.get_far_away(15,v))
+            # elif abs(navigation_system.NavigationSystem.transform_angle(t.rotation.pitch%360)- navigation_system.NavigationSystem.transform_angle(w_t.transform.rotation.pitch%360))>45:
+            #     self.reset_vehicle(v,self.get_far_away(15,v))
+
             self.curr_locations.append(p2)
             d = navigation_system.NavigationSystem.get_distance(p1,p2,res=1)
             
@@ -119,23 +150,42 @@ class TrafficController:
         for _,o_list in self.lane_obstacles.items():
             o_list.sort(key=lambda f:f.distance)
 
-    def get_far_away(self,distance=15):
-        spawn_points = self.simulator.navigation_system.spawn_points
-        max_spawn_distance = 0
-        for s in spawn_points:
-            distances = []
-            for s2 in self.simulator.traffic_controller.curr_locations:
-                d = navigation_system.NavigationSystem.get_distance(s.location,s2,res=1)
-                distances.append(d)
+    def get_far_away(self,distance=15,actor=None):
 
-            max_spawn = min(distances)
-            if max_spawn>distance:
-                spawn_point = s 
-                break
-            elif max_spawn>max_spawn_distance:
-                spawn_point = s
-        
-        return spawn_point
+        if actor:
+            spawn_points = self.simulator.navigation_system.spawn_points
+            max_spawn_distance = 0
+            for s in spawn_points:
+                distances = []
+                curr_locations = [a.get_location() for a in self.vehicles if a!=actor]
+                for s2 in curr_locations+[self.simulator.vehicle_variables.vehicle_location]: 
+                    d = navigation_system.NavigationSystem.get_distance(s.location,s2,res=1)
+                    distances.append(d)
+
+                max_spawn = min(distances)
+                if max_spawn>distance:
+                    spawn_point = s 
+                    break
+
+            return spawn_point
+        else:
+            spawn_points = self.simulator.navigation_system.spawn_points
+            random.shuffle(spawn_points)
+            max_spawn_distance = 0
+
+            for s in spawn_points:
+                distances = []
+                for s2 in self.simulator.traffic_controller.curr_locations:
+                    d = navigation_system.NavigationSystem.get_distance(s.location,s2,res=1)
+                    distances.append(d)
+
+                max_spawn = min(distances)
+                if max_spawn>distance:
+                    spawn_point = s 
+                    break
+            
+            return spawn_point
+
 
     def get_closest_in_waypoint(self,waypoint,forward=False):
 
@@ -282,7 +332,7 @@ class TrafficController:
         waypoint2 = self.simulator.map.get_waypoint(vehicle_loc)
         road_id2 = waypoint2.road_id
         lane_id2 = waypoint2.lane_id
-
+        
         if road_id==road_id2 and lane_id==lane_id2:
             return True
         else:
@@ -291,12 +341,32 @@ class TrafficController:
     
     def update(self):
         # print("call update")
-        # curr =pygame.time.get_ticks()
+        curr =pygame.time.get_ticks()
         self.update_distances()
         self.surrounding_data = self.predict_future()
         self.collision_control.update()
         # self.print_obstacles()
 
+        if (curr-self.last_restart)>1000*10*60:
+            self.reset_all_vehicles()
+            self.last_restart = curr
+
+    def reset_all_vehicles(self):
+        self.lane_obstacles = {}
+        self.obstacles = {}
+        self.simulator.client.apply_batch([carla.command.DestroyActor(x) for x in self.actor_list])
+        # batch = []
+        # prev_index = []
+        # for i,v in enumerate(self.vehicles):
+        #     pos = random.randrange(0,len(self.simulator.navigation_system.spawn_points)) 
+        #     while pos in prev_index:
+                
+        #         pos = random.randrange(0,len(self.simulator.navigation_system.spawn_points))
+        #     print(pos)
+        #     prev_index.append(pos)
+           
+        #     batch+=self.reset_vehicle(v,self.simulator.navigation_system.spawn_points[pos],ret_batch=True)
+
+        # self.simulator.client.apply_batch(batch)
         
-
-
+        self.simulator.re_episode(self.add_vehicles())

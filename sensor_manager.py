@@ -1,6 +1,7 @@
 
 import carla
 import math
+import numpy as np
 class Util(object):
 
     @staticmethod
@@ -39,7 +40,7 @@ class SensorManager():
         camera_blueprint.set_attribute('image_size_y', '480')
         spawn_transform = carla.Transform(carla.Location(x=-4, z=2.3),carla.Rotation(pitch=-15))
         self.camera = self.simulator.world.spawn_actor(camera_blueprint,spawn_transform,attach_to=self.simulator.vehicle_controller.vehicle)
-        
+
     
     def initialize_semantic_camera(self):
         semantic_blueprint  = self.simulator.blueprint_library.find('sensor.camera.semantic_segmentation')
@@ -47,7 +48,7 @@ class SensorManager():
         semantic_blueprint.set_attribute('image_size_y', '600')
         spawn_transform = carla.Transform(carla.Location(x=1.8, z=1.3),carla.Rotation())
         self.semantic_camera = self.simulator.world.spawn_actor(semantic_blueprint,spawn_transform,attach_to=self.simulator.vehicle_controller.vehicle)
-    
+
 
     def initialize_collision_sensor(self):
         collision_sensor_blueprint = self.simulator.blueprint_library.find('sensor.other.collision')
@@ -67,6 +68,23 @@ class SensorManager():
 
         # self.obstacle_sensor = self.simulator.world.spawn_actor(obstacle_sensor_blueprint,carla.Transform(),attach_to=self.simulator.vehicle_controller.vehicle)
         # self.obstacle_sensor.listen(lambda event: self.simulator.lane_ai.get_obstacle_status(event))
+    def initialize_lidar_sensor(self):
+        lidar_sensor_blueprint = self.simulator.blueprint_library.find('sensor.lidar.ray_cast')
+        lidar_sensor_blueprint.set_attribute('upper_fov','0')
+        lidar_sensor_blueprint.set_attribute('lower_fov','-10')
+        lidar_sensor_blueprint.set_attribute('rotation_frequency','20')
+        spawn_transform = carla.Transform(carla.Location(x=0, z=3))
+        self.lidar = self.simulator.world.spawn_actor(lidar_sensor_blueprint,spawn_transform,attach_to=self.simulator.vehicle_controller.vehicle)
+        self.lidar.listen(lambda image: self.lidar_image(image))
+
+    def lidar_image(self,image):
+        points = np.frombuffer(image.raw_data, dtype=np.dtype('f4'))
+        points = np.reshape(points, (int(points.shape[0] / 3), 3))
+        lidar_data = np.array(points[:, :2])
+        lidar_data = np.reshape(lidar_data, (-1, 2))
+        print(lidar_data.shape)
+        print(image.horizontal_angle,image.timestamp)
+        print()
 
     def initialize_lane_invasion_sensor(self):
         lane_invasion_sensor_blueprint = self.simulator.blueprint_library.find('sensor.other.lane_invasion')

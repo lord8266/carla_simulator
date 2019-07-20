@@ -59,6 +59,10 @@ class VehicleVariables:
         self.road_id = self.vehicle_waypoint.road_id
         self.lane_id = self.vehicle_waypoint.lane_id
 
+        if abs(self.vehicle_location.z-self.vehicle_waypoint.transform.location.z)>10:
+            self.simulator.vehicle_controller.reset(pos=self.vehicle_transform)
+        
+
         # self.print_velocity()
         # print(self.vehicle_velocity_magnitude)
         
@@ -131,6 +135,8 @@ class Simulator:
         self.last_stop = pygame.time.get_ticks()
         self.cnt = 0
         self.collide_cnt = 0
+        self.override = False
+        self.vehicle_respawn = False
 
     def temp(self):
         self.vehicle_controller.vehicle.set_transform(self.navigation_system.start)
@@ -138,7 +144,7 @@ class Simulator:
     def intitalize_carla(self,carla_server,port):
         self.client = carla.Client(carla_server,port)
         self.client.set_timeout(12.0)
-        self.world = self.client.load_world('Town03')#self.client.get_world()
+        self.world =  self.client.load_world('Town03')#self.client.get_world()
         # self.world.set_weather(carla.WeatherParameters.ClearSunset)
         # self.world = self.client.get_world()
         settings = self.world.get_settings() 
@@ -147,7 +153,8 @@ class Simulator:
         self.world.apply_settings(settings)
         self.map = self.world.get_map()
         self.blueprint_library = self.world.get_blueprint_library()
-
+        self.last_actor = None
+        
     def add_npc(self):
         blueprints = self.world.get_blueprint_library().filter('vehicle.*')
         blueprints = [x for x in blueprints if int(x.get_attribute('number_of_wheels')) == 4]
@@ -192,7 +199,7 @@ class Simulator:
         self.start_point = self.end_point
         self.end_point = self.navigation_system.spawn_points[ np.random.randint(0,len(self.navigation_system.spawn_points)) ]
         d = navigation_system.NavigationSystem.get_distance(self.start_point.location,self.end_point.location,res=1)
-        while d<15:
+        while d<25:
             self.end_point =  self.navigation_system.spawn_points[np.random.randint(0,len(self.navigation_system.spawn_points))]
             d = navigation_system.NavigationSystem.get_distance(self.start_point.location,self.end_point.location,res=1)
         
@@ -215,7 +222,7 @@ class Simulator:
        self.sensor_manager.semantic_camera.listen(lambda image: self.game_manager.semantic_callback(image))
        self.sensor_manager.initialize_collision_sensor()
     #    self.sensor_manager.initialize_lane_invasion_sensor()
-       
+       self.sensor_manager.initialize_lidar_sensor()
        
     def initialize_game_manager(self):
         self.game_manager = game_manager.GameManager(self)
@@ -253,7 +260,6 @@ class Simulator:
         # elif model==2:
         #     self.vehicle_controller.change_control(action)
 
-            
         
         self.render()
         
@@ -261,21 +267,28 @@ class Simulator:
         curr = pygame.time.get_ticks()
         vel = self.vehicle_variables.vehicle_velocity_magnitude
         traffic_light = self.sensor_manager.traffic_light_sensor()
-        if (vel>0.05):
+        if (vel>0.15):
             self.last_stop = curr
             
        
         
-        if (curr-self.last_stop)>3000: #and self.traffic_controller.override:
+        if (curr-self.last_stop)>3500: #and self.traffic_controller.override:
             self.vehicle_controller.destroy_movement()
-            self.re_level()
+            self.re_level(random_spawn=True)
             self.last_stop = curr
+
+            if self.last_actor:
+
+                self.last_actor.set_transform(self.traffic_controller.get_far_away())
+                self.last_actor = None
 
         # if (traffic_light == 0) and not self.vehicle_variables.vehicle_waypoint.is_intersection:
         #     control = self.vehicle_controller.control
         #     control.throttle = 0.0
         #     control.brake = 1.0
 
+        if self.vehicle_variables.vehicle_waypoint.is_intersection:
+            self.vehicle_controller.control.throttle = 0.4
         self.traffic_controller.update()
         # self.vehicle_controller.control_by_input(passive=True)
 
@@ -286,6 +299,9 @@ class Simulator:
             self.collide_cnt-=1
             self.collide_callback()
         
+        if self.vehicle_respawn:
+            self.vehicle_respawn = False
+            self.re_level(random_spawn=True)
         return self.observation,reward,status!=Status.RUNNING,{}
 
    
@@ -348,17 +364,42 @@ class Simulator:
         return self.get_observation()
 
     def re_level(self,random_spawn=False):
-            
-        self.start_point, self.end_point =np.random.randint(0,len(self.navigation_system.spawn_points),size=2)
-        self.start_point, self.end_point = self.navigation_system.spawn_points[self.start_point],self.navigation_system.spawn_points[self.end_point]
-        # self.start_point, self.end_point =22,40
-        self.navigation_system.make_ideal_route_r(self.start_point,self.end_point)
+        
+        
+
+        if random_spawn:
+            self.start_point= self.traffic_controller.get_far_away()
+            self.end_point = self.navigation_system.spawn_points[ np.random.randint(0,len(self.navigation_system.spawn_points)) ]
+            d = navigation_system.NavigationSystem.get_distance(self.start_point.location,self.end_point.location,res=1)
+            while d<15:
+                self.end_point =  self.navigation_system.spawn_points[np.random.randint(0,len(self.navigation_system.spawn_points))]
+                d = navigation_system.NavigationSystem.get_distance(self.start_point.location,self.end_point.location,res=1)
+            self.navigation_system.make_ideal_route_r(self.start_point,self.end_point)
+        else:
+            self.start_point,self.end_point = np.random.randint(0,len(self.navigation_system.spawn_points),2)
+            self.start_point, self.end_point = self.navigation_system.spawn_points[self.start_point],self.navigation_system.spawn_points[self.end_point]
+            # self.start_point, self.end_point =22,40
+            self.navigation_system.make_ideal_route_r(self.start_point,self.end_point)
 
       
           
                 
         self.on_restart()
     
+    def re_episode(self,prev_ids):
+        self.start_point =  np.random.randint(0,len(self.navigation_system.spawn_points))
+        while self.start_point in prev_ids:
+            self.start_point =  np.random.randint(0,len(self.navigation_system.spawn_points))
+        self.start_point = self.navigation_system.spawn_points[self.start_point]
+
+        self.end_point = self.navigation_system.spawn_points[ np.random.randint(0,len(self.navigation_system.spawn_points)) ]
+        d = navigation_system.NavigationSystem.get_distance(self.start_point.location,self.end_point.location,res=1)
+        while d<15:
+            self.end_point =  self.navigation_system.spawn_points[np.random.randint(0,len(self.navigation_system.spawn_points))]
+            d = navigation_system.NavigationSystem.get_distance(self.start_point.location,self.end_point.location,res=1)
+        self.navigation_system.make_ideal_route_r(self.start_point,self.end_point)
+        self.on_restart()
+
     def collide_callback(self):
         
         self.traffic_controller.disableAI(failed=True)

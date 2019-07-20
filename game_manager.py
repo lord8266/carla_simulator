@@ -101,8 +101,7 @@ class GameManager:
                     
 
                 if event.key==pygame.K_r:
-                    pass
-                #    self.simulator.lane_ai.lane_changer.check_new_lane(min_angle=150)
+                   self.simulator.traffic_controller.reset_all_vehicles()
                    
             
     def print_waypoint(self,waypoint):

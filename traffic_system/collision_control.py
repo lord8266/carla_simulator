@@ -66,7 +66,7 @@ class CollisionControl:
             self.last_state = self.state
 
     def update_same_lane(self,type_=1):
-
+        self.traffic_controller.simulator.override = False
         lane_obstacles = self.traffic_controller.lane_obstacles
         # print(lane_obstacles)
         lane_id = self.curr_lane
@@ -108,7 +108,6 @@ class CollisionControl:
 
     def collect_data(self,state,target):
         state = round(state[0],3),state[1]
-        print(state)
         if abs(state[0]-self.prev_state[0])>0.05:
             curr =pygame.time.get_ticks()
 
@@ -124,7 +123,7 @@ class CollisionControl:
             
     
     def modify_control(self,action,distance,delta_d):
-        
+        self.traffic_controller.simulator.override = True
         if action==0:
             self.control.throttle = 0.0
             self.control.brake = 1.0
@@ -134,7 +133,7 @@ class CollisionControl:
         elif action==2:
             self.control.throttle/=2
 
-        self.collect_data([distance,delta_d],action)
+        # self.collect_data([distance,delta_d],action)
     def update_target_lane(self):
         lane_obstacles = self.traffic_controller.lane_obstacles
         lane_id = self.target_lane
