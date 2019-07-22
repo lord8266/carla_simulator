@@ -16,8 +16,8 @@ from keras.optimizers import sgd,Adam
 import os
 import random
 import reward_system
-HIDDEN1_UNITS = 10
-HIDDEN2_UNITS = 8
+HIDDEN1_UNITS = 26
+HIDDEN2_UNITS = 20
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -181,6 +181,7 @@ class SpeedControlEnvironment:
         car_delta = s_obs[1]/10
         if car_distance>50:
             self.control.throttle = 0.99
+            self.control.brake = 0.0
 
         elif car_distance>15:
             if self.control.throttle >= 0.5:
@@ -238,7 +239,7 @@ class SpeedControlEnvironment:
             elif -0.2<=car_delta<-0.08:
                 curr_reward += 2
             elif -0.08<=car_delta<0.0 and self.control.throttle > 0.0:
-                curr_reward -= 10
+                curr_reward -= 20
             elif 0.0<=car_delta<0.08 and self.control.throttle > 0.0:
                 curr_reward += 10
             elif -0.08<=car_delta<0.08:
@@ -250,7 +251,7 @@ class SpeedControlEnvironment:
         
         elif 6>car_distance>4.8:
             if self.control.brake > 0.0:
-                curr_reward += 5
+                curr_reward += 20
             else:
                 curr_reward -= 20
             # if self.control.brake > 0.0 and car_delta<0.0:
@@ -276,7 +277,7 @@ class SpeedControlEnvironment:
 
         elif 4.8>=car_distance:
             if self.control.brake > 0.0:
-                curr_reward += 5
+                curr_reward += 25
             else:
                 curr_reward -= 25
                 
@@ -290,7 +291,7 @@ class SpeedControlAI:
 
         self.state_size = input_size
         self.action_size = action_size
-        self.memory = deque(maxlen=32*16)
+        self.memory = deque(maxlen=32*4)
         self.gamma = 0.95    # discount rate
         self.learning_rate=0.1
         self.running = True
@@ -299,18 +300,18 @@ class SpeedControlAI:
         self.epsilon_decay = 0.995
         self.model = self.build_model()
 
-        # self.target_model = self.build_model()
+        self.target_model = self.build_model()
 
         self.reward_tracker = reward_system.RewardTracker(self,25,100000,prefix='traffic_system')
         self.start =0
         self.load()
 
-        # self.update_target_model()
+        self.update_target_model()
 
         self.save_file = save_file
         self.environment = environment
         self.prev_state = None
-        self.batch_size = 32*2
+        self.batch_size = 32*4
         self.step =0
         self.start_episode=1
         self.random = random.random()
@@ -321,23 +322,24 @@ class SpeedControlAI:
 
         self.prev_time = pygame.time.get_ticks()
 
-    # def update_target_model(self):
-    #     # copy weights from model to target_model
-    #     self.target_model.set_weights(self.model.get_weights())
-    #     # print("\nTarget model updated")
+    def update_target_model(self):
+        # copy weights from model to target_model
+        self.target_model.set_weights(self.model.get_weights())
+        print("\nTarget model updated")
         
     def build_model(self):
 
         model = Sequential()
-        model.add(Dense(HIDDEN1_UNITS, input_dim=self.state_size, activation='tanh'))
-        model.add(Dense(HIDDEN2_UNITS, activation='tanh'))
-        model.add(Dense(self.action_size, activation='softmax'))
+        model.add(Dense(HIDDEN1_UNITS, input_dim=self.state_size, activation='relu'))
+        model.add(Dense(HIDDEN2_UNITS, activation='relu'))
+        model.add(Dense(self.action_size, activation='tanh'))
         model.compile(loss = 'mse',optimizer = Adam(lr = self.learning_rate))
         print("built double deep q model for collision control")
         return model
 
 
     def remember(self, state, action, reward, next_state, done):
+        # print("memory: ",(state, action, reward, next_state, done))
         self.memory.append((state, action, reward, next_state, done))
 
     def collect_data(self,state,target):
@@ -475,62 +477,64 @@ class SpeedControlAI:
         act_values = self.model.predict(state)
         return np.argmax(act_values[0])
         
-    def replay(self, batch_size):
-
-        minibatch = random.sample(self.memory, batch_size)
-        # minibatch=np.array(minibatch)
-        # rewards=minibatch[:,2]
-        # mean=np.mean(rewards)
-        # std=np.std(rewards)
-        # minibatch[:,2]=(rewards-mean)/(std+1e-10)
-
-        for state, action, reward, next_state, done in minibatch:
-            target = reward
-            if not done:
-                target = (reward + self.gamma *
-                          np.amax(self.model.predict(next_state)[0]))
-            target_f = self.model.predict(state)
-            target_f[0][action] = target
-            self.model.fit(state, target_f, epochs=1, verbose=0)
-        if self.episode % 20 == 0 and self.start_episode:
-            self.start_episode = 0
-            if self.epsilon > self.epsilon_min:
-                self.epsilon *= self.epsilon_decay
-            else:
-                self.epsilon = 0.4
-        elif self.episode % 20 != 0 :
-            self.start_episode = 1
-
     # def replay(self, batch_size):
 
-    #     minibatch = random.sample(self.memory, batch_size)
+    #     minibatch = self.memory
+    #     # minibatch = random.sample(self.memory, batch_size)
     #     # minibatch=np.array(minibatch)
     #     # rewards=minibatch[:,2]
-    #     # print("rewards: ",rewards[2:15])
     #     # mean=np.mean(rewards)
     #     # std=np.std(rewards)
-    #     # minibatch[:,2]=(rewards-abs(mean))/(std+1e-10)
-    #     # print("normalised rewards: ",(minibatch[:,2])[2:15])
-    #     for state, action, reward, next_state, done in minibatch:
-    #         target = self.model.predict(state)
-    #         if done:
-    #             target[0][action] = reward
-    #         else:
-    #             # a = self.model.predict(next_state)[0]
-    #             t = self.target_model.predict(next_state)[0]
-    #             target[0][action] = reward + self.gamma * np.amax(t)
-    #             # target[0][action] = reward + self.gamma * t[np.argmax(a)]
-    #         # print("\ntarget",reward,t)
-    #         self.model.fit(state, target, epochs=1, verbose=0)
+    #     # minibatch[:,2]=(rewards-mean)/(std+1e-10)
 
+    #     for state, action, reward, next_state, done in minibatch:
+    #         target = reward
+    #         if not done:
+    #             target = (reward + self.gamma *
+    #                       np.amax(self.model.predict(next_state)[0]))
+    #         target_f = self.model.predict(state)
+    #         target_f[0][action] = target
+    #         self.model.fit(state, target_f, epochs=1, verbose=0)
     #     if self.episode % 20 == 0 and self.start_episode:
     #         self.start_episode = 0
     #         if self.epsilon > self.epsilon_min:
     #             self.epsilon *= self.epsilon_decay
     #         else:
-    #             self.epsilon = 0.8
+    #             self.epsilon = 0.4
     #     elif self.episode % 20 != 0 :
     #         self.start_episode = 1
+
+    def replay(self, batch_size):
+        minibatch = self.memory
+        # minibatch = random.sample(self.memory, batch_size)
+        # minibatch=np.array(minibatch)
+        # rewards=minibatch[:,2]
+        # print("rewards: ",rewards[2:15])
+        # mean=np.mean(rewards)
+        # std=np.std(rewards)
+        # minibatch[:,2]=(rewards-abs(mean))/(std+1e-10)
+        # print("normalised rewards: ",(minibatch[:,2])[2:15])
+        for state, action, reward, next_state, done in minibatch:
+            target = self.model.predict(state)
+            if done:
+                target[0][action] = reward
+            else:
+                # a = self.model.predict(next_state)[0]
+                t = self.target_model.predict(next_state)[0]
+                target[0][action] = reward + self.gamma * np.amax(t)
+                # target[0][action] = reward + self.gamma * t[np.argmax(a)]
+            # print("\ntarget",reward,t)
+            print("\nexpected: ",target)
+            self.model.fit(state, target, epochs=1, verbose=0)
+
+        if self.episode % 20 == 0 and self.start_episode:
+            self.start_episode = 0
+            if self.epsilon > self.epsilon_min:
+                self.epsilon *= self.epsilon_decay
+            else:
+                self.epsilon = 0.8
+        elif self.episode % 20 != 0 :
+            self.start_episode = 1
 
             
 

@@ -112,7 +112,7 @@ class Simulator:
         self.respawn_pos_times = 0
         self.key_control = False
         self.collision_vehicle =False
-        self.traffic_controller = traffic_controller.TrafficController(self,160)
+        self.traffic_controller = traffic_controller.TrafficController(self,120)
         self.traffic_controller.add_vehicles()
         self.lane_ai = lane_ai.LaneAI(self)
         #need to change from here
@@ -256,7 +256,7 @@ class Simulator:
         curr = pygame.time.get_ticks()
         vel = self.vehicle_variables.vehicle_velocity_magnitude
         traffic_light = self.sensor_manager.traffic_light_sensor()
-        if ((vel>0.05) or traffic_light==0) or self.traffic_controller.ai_enabled==True:
+        if ((vel>0.05) or traffic_light==0):# or self.traffic_controller.ai_enabled==True:
             self.last_stop = curr
             
        
