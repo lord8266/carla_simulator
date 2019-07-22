@@ -16,8 +16,8 @@ from keras.optimizers import sgd,Adam
 import os
 import random
 import reward_system
-HIDDEN1_UNITS = 50
-HIDDEN2_UNITS = 40
+HIDDEN1_UNITS = 10
+HIDDEN2_UNITS = 8
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -162,10 +162,12 @@ class SpeedControlEnvironment:
         elif mod <0:
             mod = abs(mod)/100
             self.control.throttle*=mod
+            self.control.brake = 0.0
         else:
             mod+=100
             mod = mod/100
             self.control.throttle*=mod
+            self.control.brake = 0.0
         s_obs = step_observation[0]
         # print("episode:", self.ai.episode, "  prev_episode:", self.ai.prev_episode, "  epsilon:", self.ai.epsilon)
         # if self.control.throttle == 0:
@@ -205,10 +207,12 @@ class SpeedControlEnvironment:
         elif 8<car_distance<11:
             # if self.control.throttle >= 0.3 and -0.4<=car_delta<0.2:
             #     curr_reward += 1.25
-            if car_delta<-0.5:
-                curr_reward -= 2 
+            if car_delta<-0.5 and self.control.throttle > 0.5:
+                curr_reward -= 6
+            elif car_delta<-0.5:
+                curr_reward += 2 
             elif -0.5<=car_delta<-0.2 and self.control.throttle > 0.5:
-                curr_reward -= 1
+                curr_reward -= 4
             elif -0.5<=car_delta<-0.2:
                 curr_reward += 1.5
             elif -0.2<=car_delta<-0.09:
@@ -222,33 +226,33 @@ class SpeedControlEnvironment:
 
         elif 6<=car_distance<=8:
             if car_delta<-0.5 and self.control.throttle > 0.0:
-                curr_reward -= 5
+                curr_reward -= 10
             elif car_delta<-0.5:
                 curr_reward += 1
             elif -0.5<=car_delta<-0.2 and self.control.throttle > 0.0:
-                curr_reward -= 4
+                curr_reward -= 10
             elif -0.5<=car_delta<-0.2:
                 curr_reward += 2
             elif -0.2<=car_delta<-0.08 and self.control.throttle > 0.5:
-                curr_reward -= 1
+                curr_reward -= 4
             elif -0.2<=car_delta<-0.08:
                 curr_reward += 2
-            elif -0.08<=car_delta<0.0 and self.control.throttle > 0.5:
-                curr_reward -= 4.5
-            elif -0.08<=car_delta<0.08 and self.control.throttle > 0.0:
+            elif -0.08<=car_delta<0.0 and self.control.throttle > 0.0:
+                curr_reward -= 10
+            elif 0.0<=car_delta<0.08 and self.control.throttle > 0.0:
                 curr_reward += 10
             elif -0.08<=car_delta<0.08:
                 curr_reward += 3
             elif 0.08<=car_delta<0.2:
-                curr_reward -= 2
-            elif 0.1<=car_delta:
                 curr_reward -= 3
+            elif 0.1<=car_delta:
+                curr_reward -= 4
         
         elif 6>car_distance>4.8:
             if self.control.brake > 0.0:
                 curr_reward += 5
             else:
-                curr_reward -= 5
+                curr_reward -= 20
             # if self.control.brake > 0.0 and car_delta<0.0:
             #     curr_reward += 1.25
             # if car_delta<-0.5:
@@ -274,7 +278,7 @@ class SpeedControlEnvironment:
             if self.control.brake > 0.0:
                 curr_reward += 5
             else:
-                curr_reward -= 5
+                curr_reward -= 25
                 
         print("reward :","%5.2f"%curr_reward, "\t\tobs :"," %5.2f"%(car_distance),"  %5.2f"%(car_delta),"  %5.2f"%(s_obs[2]), end="")
         return self.get_observation(),curr_reward
@@ -286,11 +290,11 @@ class SpeedControlAI:
 
         self.state_size = input_size
         self.action_size = action_size
-        self.memory = deque(maxlen=32*30)
+        self.memory = deque(maxlen=32*16)
         self.gamma = 0.95    # discount rate
         self.learning_rate=0.1
         self.running = True
-        self.epsilon = 0.7 # exploration rate
+        self.epsilon = 0.5 # exploration rate
         self.epsilon_min = 0.1
         self.epsilon_decay = 0.995
         self.model = self.build_model()
@@ -306,7 +310,7 @@ class SpeedControlAI:
         self.save_file = save_file
         self.environment = environment
         self.prev_state = None
-        self.batch_size = 32*8
+        self.batch_size = 32*2
         self.step =0
         self.start_episode=1
         self.random = random.random()
@@ -385,7 +389,7 @@ class SpeedControlAI:
 
         if random.random()<self.epsilon:
             print("action  :",end = " ")
-            return random.randint(0,5)
+            #return random.randint(0,5)
             s_obs = state[0]
             car_distance = abs(s_obs[0])*3
             car_delta = s_obs[1]/10
@@ -557,7 +561,7 @@ class SpeedControlAI:
         print()
         if failed and action<3 and prev_state[0][0]<50:
             print("\nhit")
-            reward -= 10
+            reward -= 30
         # print("State:"+str(state),"Reward:" + str(reward),sep='\n',end='\n\n')
         
         state = np.reshape(state, [1, self.state_size])
@@ -579,6 +583,3 @@ class SpeedControlAI:
         self.step+=1
 
         return action
-
-        
-
