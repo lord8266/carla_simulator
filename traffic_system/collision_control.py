@@ -278,7 +278,7 @@ class SpeedControlEnvironment:
             else:
                 curr_reward -= 25
                 
-        print("\t\tobs :"," %5.2f"%(car_distance),"  %5.2f"%(car_delta),"  %5.2f"%(s_obs[2]), end="")
+        # print("\t\tobs :"," %5.2f"%(car_distance),"  %5.2f"%(car_delta),"  %5.2f"%(s_obs[2]), end="")
         return self.get_observation(),curr_reward
             
 
@@ -387,7 +387,7 @@ class SpeedControlAI:
 
 
         if True:#random.random()<self.epsilon:
-            print("action  :",end = " ")
+            # print("action  :",end = " ")
             #return random.randint(0,5)
             s_obs = state[0]
             car_distance = abs(s_obs[0])*3
@@ -461,7 +461,7 @@ class SpeedControlAI:
 
             elif car_distance<4.8:
                 return 5
-        print("predict: ",end=" ")
+        # print("predict: ",end=" ")
         act_values = self.model.predict(state)
         return np.argmax(act_values[0]) 
 
@@ -552,11 +552,11 @@ class SpeedControlAI:
     def run_epoch(self,done=False,failed=False):
         prev_state = self.prev_state
         action = self.act(prev_state)
-        print(action, end="   ")
+        # print(action, end="   ")
         # self.collect_data(prev_state,action)
         state,reward = self.environment.modify_control(action,prev_state)
         state = np.reshape(state, [1, self.state_size])
-        print()
+        # print()
 
         # if failed and action<3 and prev_state[0][0]<50:
         #     print("\nhit")
