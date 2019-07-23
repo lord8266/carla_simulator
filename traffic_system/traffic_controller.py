@@ -107,7 +107,7 @@ class TrafficController:
         for i,o in self.obstacles.items():
             if o.distance<max_distance and o.angle<max_angle:
                 #emergency
-                if o.distance<6 and o.angle<5.6 and o.delta_d<=0:
+                if o.distance<5.2 and o.angle<5.6 and o.delta_d<=0:
                     control = self.simulator.vehicle_controller.control
                     control.throttle = 0.0
                     control.steer = 0.0
@@ -311,7 +311,7 @@ class TrafficController:
         self.update_distances()
 
         self.surrounding_data = self.predict_future()
-        # self.update_local_front()
+        self.update_local_front()
 
 
         

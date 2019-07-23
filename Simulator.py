@@ -256,7 +256,7 @@ class Simulator:
         curr = pygame.time.get_ticks()
         vel = self.vehicle_variables.vehicle_velocity_magnitude
         traffic_light = self.sensor_manager.traffic_light_sensor()
-        if ((vel>0.05) or traffic_light==0):# or self.traffic_controller.ai_enabled==True:
+        if ((vel>0.05) or traffic_light==0) or self.traffic_controller.ai_enabled==True:
             self.last_stop = curr
             
        
@@ -264,10 +264,10 @@ class Simulator:
         if (curr-self.last_stop)>5000:
             self.re_level()
             self.last_stop = curr
-        # if (traffic_light == 0) and not self.vehicle_variables.vehicle_waypoint.is_intersection:
-        #     control = self.vehicle_controller.control
-        #     control.throttle = 0.0
-        #     control.brake = 1.0
+        if (traffic_light == 0) and not self.vehicle_variables.vehicle_waypoint.is_intersection:
+            control = self.vehicle_controller.control
+            control.throttle = 0.0
+            control.brake = 1.0
         # self.vehicle_controller.control_by_input(passive=True)
 
         w = self.vehicle_variables.vehicle_waypoint

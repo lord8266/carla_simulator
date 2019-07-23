@@ -41,17 +41,16 @@ class CollisionControl:
         self.apply_condtions()
     
     def apply_condtions(self):
-        pass
-        # if self.lane_changer.state==lane_ai.State.LANE_CHANGE:
-        #     self.disable_AI()
-        #     self.lane_changing_halt()
-        #     self.lane_changer.update_waypoint()
+        if self.lane_changer.state==lane_ai.State.LANE_CHANGE:
+            self.disable_AI()
+            self.lane_changing_halt()
+            self.lane_changer.update_waypoint()
 
-        # elif self.lane_changer.state==lane_ai.State.RUNNING:
-        #     if self.state==ControlState.AI:
-        #         self.modify_by_AI()
-        #     self.same_lane_halt()
-        #     self.check_new_lane()
+        elif self.lane_changer.state==lane_ai.State.RUNNING:
+            if self.state==ControlState.AI:
+                self.modify_by_AI()
+            self.same_lane_halt()
+            self.check_new_lane()
 
            
     
@@ -128,11 +127,7 @@ class SpeedControlEnvironment:
 
     def __init__(self,traffic_controller):
         self.traffic_controller = traffic_controller
-        # pass distance and delta_d
-        # reward negative distance
-        # self.actions = [30,20,-20,-40,-60,-120,-140]
-        # self.ai = SpeedControlAI(self,input_size=4,action_size=7)
-        self.actions = [50,10,-70,-130,-160,-190]
+        self.actions = [50,10,-85,-130,-165,-199]
         self.ai = SpeedControlAI(self,input_size=3,action_size=6)
 
     def start(self):
@@ -179,7 +174,9 @@ class SpeedControlEnvironment:
         curr_reward = 0
         car_distance = abs(s_obs[0])*3
         car_delta = s_obs[1]/10
-        if car_distance>50:
+        if True:
+            pass
+        elif car_distance>50:
             self.control.throttle = 0.99
             self.control.brake = 0.0
 
@@ -225,7 +222,7 @@ class SpeedControlEnvironment:
             elif 0.2<=car_delta:
                 curr_reward -= 4
 
-        elif 6<=car_distance<=8:
+        elif 6.3<=car_distance<=8:
             if car_delta<-0.5 and self.control.throttle > 0.0:
                 curr_reward -= 10
             elif car_delta<-0.5:
@@ -249,7 +246,7 @@ class SpeedControlEnvironment:
             elif 0.1<=car_delta:
                 curr_reward -= 4
         
-        elif 6>car_distance>4.8:
+        elif 6.3>car_distance>4.8:
             if self.control.brake > 0.0:
                 curr_reward += 20
             else:
@@ -281,7 +278,7 @@ class SpeedControlEnvironment:
             else:
                 curr_reward -= 25
                 
-        print("reward :","%5.2f"%curr_reward, "\t\tobs :"," %5.2f"%(car_distance),"  %5.2f"%(car_delta),"  %5.2f"%(s_obs[2]), end="")
+        print("\t\tobs :"," %5.2f"%(car_distance),"  %5.2f"%(car_delta),"  %5.2f"%(s_obs[2]), end="")
         return self.get_observation(),curr_reward
             
 
@@ -389,7 +386,7 @@ class SpeedControlAI:
                 return random.randint(3,5)
 
 
-        if random.random()<self.epsilon:
+        if True:#random.random()<self.epsilon:
             print("action  :",end = " ")
             #return random.randint(0,5)
             s_obs = state[0]
@@ -397,60 +394,58 @@ class SpeedControlAI:
             car_delta = s_obs[1]/10
             car_speed = s_obs[2]
 
-            if 20<car_distance and car_speed > 9:
-                return 2
+            if 20<=car_distance and 9<car_speed:
+                return 1
 
-            elif car_distance>=11:
+            elif 11<=car_distance:
                 if car_speed > 9:
                     return 3
                 if car_delta<-0.5:
                     return 2
                 elif -0.5<=car_delta<-0.2:
                     return 1
-                elif -0.2<=car_delta<0.05:
+                else:
                     return 0
-                elif 0.05<=car_delta<0.5:
-                    return 0
-                elif 0.5<=car_delta:
-                    return 0
+                # elif -0.2<=car_delta<0.05:
+                #     return 0
+                # elif 0.05<=car_delta<0.5:
+                #     return 0
+                # elif 0.5<=car_delta:
+                #     return 0
             
             elif 8<car_distance<11:
                 if car_speed > 6 and car_delta<-0.2:
-                    return 5
-                elif car_speed > 6 and -0.2<=car_delta<0.02:
-                    return 2
+                    return 4
+                elif car_speed > 6 and -0.2<=car_delta<0.05:
+                    return 3
                 if car_delta<-0.5:
                     return 4
                 elif -0.5<=car_delta<-0.3:
                     return 3
-                elif -0.3<=car_delta<-0.2:
-                    return 2
-                elif -0.2<=car_delta<0.05:
+                elif -0.3<=car_delta<0.05:
                     return 2
                 elif 0.05<=car_delta<0.5:
                     return 1
                 elif 0.5<=car_delta:
-                    return 0
+                    return 1
 
             elif 6<=car_distance<=8:
                 if car_speed > 6:
                     return 5
-                if car_delta<-0.5:
-                    return 5
-                elif -0.5<=car_delta<-0.2:
+                if car_delta<-0.2:
                     return 5
                 elif -0.2<=car_delta<-0.05:
-                    return 4
+                    return 5
                 elif -0.05<=car_delta<=-0.02:
-                    return 3
-                elif -0.02<car_delta<0.01:
+                    return 4
+                elif -0.02<car_delta<0.02:
                     return 2
-                elif 0.01<=car_delta<0.1:
-                    return 2
+                elif 0.02<=car_delta<0.1:
+                    return 1
                 elif 0.1<=car_delta:
                     return 1
             
-            elif 6>car_distance>4.8:
+            elif 4.8<=car_distance<6:
                 if car_speed > 3:
                     return 5
                 if car_delta<-0.5:
@@ -458,15 +453,13 @@ class SpeedControlAI:
                 elif -0.5<=car_delta<-0.2:
                     return 5
                 elif -0.2<=car_delta<0.01:
-                    return 4
+                    return 5
                 elif 0.01<=car_delta<0.1:
                     return 2
-                elif 0.1<=car_delta<0.3:
-                    return 2
-                elif 0.3<=car_delta:
+                elif 0.1<=car_delta:
                     return 1
 
-            elif 4.8>=car_distance:
+            elif car_distance<4.8:
                 return 5
         print("predict: ",end=" ")
         act_values = self.model.predict(state)
@@ -524,7 +517,7 @@ class SpeedControlAI:
                 target[0][action] = reward + self.gamma * np.amax(t)
                 # target[0][action] = reward + self.gamma * t[np.argmax(a)]
             # print("\ntarget",reward,t)
-            print("\nexpected: ",target)
+            # print("\nexpected: ",target)
             self.model.fit(state, target, epochs=1, verbose=0)
 
         if self.episode % 20 == 0 and self.start_episode:
@@ -562,28 +555,26 @@ class SpeedControlAI:
         print(action, end="   ")
         # self.collect_data(prev_state,action)
         state,reward = self.environment.modify_control(action,prev_state)
-        print()
-        if failed and action<3 and prev_state[0][0]<50:
-            print("\nhit")
-            reward -= 30
-        # print("State:"+str(state),"Reward:" + str(reward),sep='\n',end='\n\n')
-        
         state = np.reshape(state, [1, self.state_size])
-        self.remember(prev_state, action, reward, state, done)
+        print()
 
-        if len(self.memory) > self.batch_size:
-            self.replay(self.batch_size)
+        # if failed and action<3 and prev_state[0][0]<50:
+        #     print("\nhit")
+        #     reward -= 30
+        
+        # self.remember(prev_state, action, reward, state, done)
+        # if len(self.memory) >= self.batch_size:
+        #     print("replay function called")
+        #     self.replay(self.batch_size)
 
         self.prev_state = state
-        self.total_rewards+=reward
-        # if not self.step%20:
-        #     print(f"Step:{self.step}, Rewards: {self.total_rewards}")
 
-        if done:
-            # self.update_target_model()
-            self.reward_tracker.end_episode(self.total_rewards/(self.step+1))
-            print(f"\n\n\nComplete Episode {self.episode}, Total Rewards: {self.total_rewards/(self.step+1)}, Epsilon: {self.epsilon}")
-            self.episode+=1
-        self.step+=1
+        # self.total_rewards+=reward
+        # if done:
+        #     # self.update_target_model()
+        #     self.reward_tracker.end_episode(self.total_rewards/(self.step+1))
+        #     print(f"\n\n\nComplete Episode {self.episode}, Total Rewards: {self.total_rewards/(self.step+1)}, Epsilon: {self.epsilon}")
+        #     self.episode+=1
+        # self.step+=1
 
         return action
