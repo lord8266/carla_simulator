@@ -80,10 +80,14 @@ class VehicleController:
 
         VehicleController.equate_controls(self.control,control) 
         angle = self.simulator.observation[2]
-        print("%5.2f"%(self.control.steer), end = "\t")
-        self.control.steer = 0.8*angle/70
-        print("%5.2f"%(self.control.steer))
-        self.control.steer = np.clip(self.control.steer,-0.55,0.55)
+        # print("%5.2f"%(self.control.steer), end = "\t")
+        if abs(self.simulator.observation[0])<1:
+            self.control.steer *= abs(angle/70)
+        else:
+            self.control.steer *= (abs(angle)+30)/70
+        # print("%5.2f"%(self.control.steer))
+        self.control.steer = np.clip(self.control.steer,-0.75,0.75)
+
 
     def change_control(self,control):
         

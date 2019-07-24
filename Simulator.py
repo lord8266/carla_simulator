@@ -264,11 +264,10 @@ class Simulator:
         if (curr-self.last_stop)>5000:
             self.re_level()
             self.last_stop = curr
-        if (traffic_light == 0) and not self.vehicle_variables.vehicle_waypoint.is_intersection:
-            control = self.vehicle_controller.control
-            control.throttle = 0.0
-            control.brake = 1.0
-        # self.vehicle_controller.control_by_input(passive=True)
+        # if (traffic_light == 0) and not self.vehicle_variables.vehicle_waypoint.is_intersection:
+        #     control = self.vehicle_controller.control
+        #     control.throttle = 0.0
+        #     control.brake = 1.0
 
         w = self.vehicle_variables.vehicle_waypoint
         
@@ -359,7 +358,6 @@ class Simulator:
         self.on_restart()
     
     def collide_callback(self):
-        
         self.traffic_controller.disableAI(failed=True)
         self.start_point = self.traffic_controller.get_far_away()
         self.end_point = self.navigation_system.spawn_points[ np.random.randint(0,len(self.navigation_system.spawn_points)) ]

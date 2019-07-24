@@ -83,22 +83,15 @@ class RewardSystem:
     def update_rewards(self):
         self.curr_reward =0
         self.curr_reward+= self.checkpoint()
-        # direction_reward =self.direction_penalty()
-        # proximity_reward = self.proximity_penalty()
-        # discrete = self.get_discrete_rewards()
-        # # +discrete
         obs = self.simulator.observation
-        self.curr_reward -= abs(obs[0])*20
-        self.curr_reward -= obs[1]*10
-        self.curr_reward -= abs(obs[2])*3
+        if abs(obs[0]*50)<1:
+            self.curr_reward += 150
+        else:
+            self.curr_reward -= abs(obs[0]*50)
+            self.curr_reward -= obs[1]*10
+        self.curr_reward -= abs(obs[2])
         if abs(obs[2])<10:
-            self.curr_reward += self.simulator.vehicle_variables.vehicle_velocity_magnitude*4
-        # self.curr_reward -= self.state_change_penalty()
-
-        # print(f"CheckPoint Reward: {checkpoint_reward}, Direction Reward: {direction_reward}, Proximity Reward: {proximity_reward}, Forward Reward: {forward_reward}\n")
-        # print(f"Forward Reward: {forward_reward}")
-
-        # self.curr_reward = checkpoint_reward+direction_reward+proximity_reward+forward_reward
+            self.curr_reward += self.simulator.vehicle_variables.vehicle_velocity_magnitude*2
 
 
 

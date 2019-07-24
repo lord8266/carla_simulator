@@ -7,8 +7,8 @@ import os
 import random
 import reward_system
 import pygame
-HIDDEN1_UNITS = 50
-HIDDEN2_UNITS = 40
+HIDDEN1_UNITS = 16
+HIDDEN2_UNITS = 12
 
 class Model:
 
@@ -20,7 +20,7 @@ class Model:
         self.gamma = 0.95    # discount rate
         self.learning_rate=0.0025
         self.running = True
-        self.epsilon = 0.4  # exploration rate
+        self.epsilon = 0.8  # exploration rate
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.simulator =simulator
@@ -58,8 +58,8 @@ class Model:
         self.memory.append((state, action, reward, next_state, done))
 
     def act(self, state):
-        # if random.random() <= self.epsilon:  
-        #     return random.randrange(self.action_size) 
+        if random.random() <= self.epsilon:  
+            return random.randrange(self.action_size) 
         act_values = self.model.predict(state)
         return np.argmax(act_values[0])  # returns index value of o/p action
         # key_state,action = self.simulator.vehicle_controller.check_key_state()
@@ -138,7 +138,7 @@ class Model:
                 # next_state, reward, done, _ = env.step(action)
                 next_state,reward,done,_ = self.simulator.step(action) #check
                 self.total_rewards += reward
-
+                print("state :","  %5.2f"%(state[0][0]),"  %5.2f"%(state[0][1]),"  %5.2f"%(state[0][2]),"\t action :","  %5.2f"%(self.simulator.vehicle_controller.control.steer))
                 # reward = reward if not done else -10 #check
                 next_state = np.reshape(next_state, [1, self.state_size])
                 self.remember(state, action, reward, next_state, done)
@@ -153,7 +153,7 @@ class Model:
                     break
                 
             self.reward_tracker.end_episode(self.total_rewards)
-            # print(f"Complete Episode {e} , Epsilon: {self.epsilon}, Total Rewards: {self.total_rewards},Position: {self.simulator.navigation_system.curr_pos} / {len(self.simulator.navigation_system.ideal_route)} ")
+            print(f"Complete Episode {e} , Epsilon: {self.epsilon}, Total Rewards: {self.total_rewards},Position: {self.simulator.navigation_system.curr_pos} / {len(self.simulator.navigation_system.ideal_route)} ")
             
             if self.running==False:
                 break
