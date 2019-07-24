@@ -15,8 +15,7 @@ import  random
 import lane_ai
 from agents.tools import misc
 from lane_ai import Obstacle
-from collision_control import SpeedControlEnvironment
-
+from collision_control import SpeedControlEnvironment,CollisionControl
 class TrafficController:
 
     def __init__(self,simulator,vehicle_count):
@@ -33,7 +32,8 @@ class TrafficController:
         self.ai_enabled = False
         self.curr_locations = []
         self.lane_obstacles = {}
-        
+        self.collision_control = CollisionControl(self)
+
     def add_vehicles(self):
         blueprints = self.simulator.world.get_blueprint_library().filter('vehicle.*')
         blueprints = [x for x in blueprints if int(x.get_attribute('number_of_wheels')) == 4]
@@ -72,34 +72,41 @@ class TrafficController:
        
         for v in self.vehicles:
             
-            p2 = v.get_location()
+            t = v.get_transform()
+            
+            p2 = t.location
+            w_t = self.simulator.map.get_waypoint(p2)
+
+            # if abs(w_t.transform.location.z-p2.z)>10:
+            #     self.reset_vehicle(v,self.get_far_away(15,v))
+
+            # elif abs(navigation_system.NavigationSystem.transform_angle(t.rotation.roll%360)- navigation_system.NavigationSystem.transform_angle(w_t.transform.rotation.roll%360))>45:
+            #     self.reset_vehicle(v,self.get_far_away(15,v))
+            # elif abs(navigation_system.NavigationSystem.transform_angle(t.rotation.pitch%360)- navigation_system.NavigationSystem.transform_angle(w_t.transform.rotation.pitch%360))>45:
+            #     self.reset_vehicle(v,self.get_far_away(15,v))
+
             self.curr_locations.append(p2)
             d = navigation_system.NavigationSystem.get_distance(p1,p2,res=1)
-            e1 = self.simulator.vehicle_controller.vehicle.bounding_box.extent
-            extent1 = max([e1.x,e1.y,e1.z])
-            e2 = v.bounding_box.extent
-            extent2 = max([e2.x,e2.y,e2.z])
-            d -=(extent1+extent2)
-            d = max(0,min(d,70))
             
-            if d<20:
+            if d<30:
                 passed =False
                 if v.id in self.obstacles:
-                    if self.obstacles[v.id].angle<130:
-                        passed=True
-                        self.obstacles[v.id].update()
-                        this_obs = self.obstacles[v.id]
+                    passed=True
+                    self.obstacles[v.id].update(d)
+                    # print("Update")
                 else:
-                    this_obs = Obstacle(self.simulator,v)
-                    if this_obs.angle<130:
-                        passed = True
-                        self.obstacles[v.id] = this_obs
+                    this_obs = lane_ai.Obstacle(self.simulator,v,d)
+                    passed = True
+                    self.obstacles[v.id] = this_obs
+                    # print("Add")
                 
                 if passed:
                     found_ids.append(v.id)
-                    self.update_lane_obstacles(this_obs)
-        
+        self.update_lane_obstacles()         
         self.rem_obstacles(found_ids)
+
+        
+
 
     def update_local_front(self,max_distance=13,max_angle=60):
         self.local_front = {}
@@ -107,7 +114,9 @@ class TrafficController:
         for i,o in self.obstacles.items():
             if o.distance<max_distance and o.angle<max_angle:
                 #emergency
-                if o.distance<5.2 and o.angle<5.6 and o.delta_d<=0:
+                print(o.delta_d)
+                if o.distance<8 and o.angle<5.6 and o.delta_d<=0.02:# and o.waypoint.is_intersection:
+                    print("Emergency ")
                     control = self.simulator.vehicle_controller.control
                     control.throttle = 0.0
                     control.steer = 0.0
@@ -116,17 +125,29 @@ class TrafficController:
                 self.local_front[i] =o
         
 
-    def update_lane_obstacles(self,this_obs):
+    def update_lane_obstacles(self):
 
-        lane_side = self.simulator.vehicle_variables.lane_id>0
-        road_id =self.simulator.vehicle_variables.road_id
+        self.lane_obstacles = {}
+        road_id,lane_id = self.simulator.vehicle_variables.road_id,self.simulator.vehicle_variables.lane_id
+        lane_side = lane_id>0
+        for _,o in self.obstacles.items():
 
-        if this_obs.road_id==road_id:
-            this_lane_side = this_obs.lane_id>0
+            if o.angle<110:
+                if o.road_id==road_id :
+                    this_lane_side = o.lane_id>0
 
-            if this_lane_side==lane_side:
-                if this_obs.lane_id not in self.lane_obstacles:
-                    self.lane_obstacles[this_obs.lane_id]  = this_obs
+                    if this_lane_side==lane_side:
+
+                        if  o.lane_id in self.lane_obstacles:
+                            self.lane_obstacles[o.lane_id].append(o)
+                        else:
+                            self.lane_obstacles[o.lane_id] = [o]
+                
+        if lane_id not in self.lane_obstacles:
+            self.lane_obstacles[lane_id] = []
+        
+        for _,o_list in self.lane_obstacles.items():
+            o_list.sort(key=lambda f:f.distance)
 
 
     def get_far_away(self,distance=15):
@@ -176,7 +197,7 @@ class TrafficController:
             # print("Enable AI")
             self.ai_enabled =True
             self.env.start()
-
+                                        
     def disableAI(self,failed=False):
         if self.ai_enabled:
             # print("Disable AI")
@@ -309,8 +330,8 @@ class TrafficController:
         # print("call update")
         # curr =pygame.time.get_ticks()
         self.update_distances()
-
         self.surrounding_data = self.predict_future()
+        self.collision_control.update()
         self.update_local_front()
 
 

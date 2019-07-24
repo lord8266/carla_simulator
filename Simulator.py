@@ -112,9 +112,10 @@ class Simulator:
         self.respawn_pos_times = 0
         self.key_control = False
         self.collision_vehicle =False
+        self.lane_ai = lane_ai.LaneAI(self)
         self.traffic_controller = traffic_controller.TrafficController(self,120)
         self.traffic_controller.add_vehicles()
-        self.lane_ai = lane_ai.LaneAI(self)
+        
         #need to change from here
         self.navigation_system.make_local_route()
         self.agent = basic_agent.BasicAgent(self.vehicle_controller.vehicle)
@@ -264,10 +265,10 @@ class Simulator:
         if (curr-self.last_stop)>5000:
             self.re_level()
             self.last_stop = curr
-        if (traffic_light == 0) and not self.vehicle_variables.vehicle_waypoint.is_intersection:
-            control = self.vehicle_controller.control
-            control.throttle = 0.0
-            control.brake = 1.0
+        # if (traffic_light == 0) and not self.vehicle_variables.vehicle_waypoint.is_intersection:
+        #     control = self.vehicle_controller.control
+        #     control.throttle = 0.0
+        #     control.brake = 1.0
         # self.vehicle_controller.control_by_input(passive=True)
 
         w = self.vehicle_variables.vehicle_waypoint
@@ -276,6 +277,7 @@ class Simulator:
             self.vehicle_controller.control.throttle *= 0.6
         # if w.is_intersection and self.vehicle_controller.control.steer > 0:
         #     self.vehicle_controller.control.throttle *= 1.3
+        self.traffic_controller.update_local_front()
 
         self.vehicle_controller.apply_control()
         
