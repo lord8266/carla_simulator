@@ -394,6 +394,7 @@ class TrafficController:
         self.update_local_front()
         self.props.update()
 
+
 class Type(Enum):
     BLOCKING=1,
     NON_BLOCKING=2
@@ -421,7 +422,8 @@ class Props:
     def load_spawn_data(self):
 
         f = np.load('spawn_data.npy')
-        self.spawn_data = [ (self.map.get_waypoint(carla.Location(t[0],t[1],t[2])), index==1 and Type.BLOCKING or Type.NON_BLOCKING) for t,index in zip(f[:,:3],f[:,3].astype(int) ) ]
+        # self.spawn_data = [ (self.map.get_waypoint(carla.Location(t[0],t[1],t[2])), index==1 and Type.BLOCKING or Type.NON_BLOCKING) for t,index in zip(f[:,:3],f[:,3].astype(int) ) ]
+        self.spawn_data =[]
         for a,b in self.spawn_data:
             print(a,b)
     # draw_line(self, begin, end, thickness=0.1f, color=(255,0,0), life_time=-1.0f, persistent_lines=True) 
@@ -483,36 +485,36 @@ class Props:
         return group
 
     def prop_priority(self):
-        
-        if self.state==State.ACTIVE:
-            control = self.simulator.vehicle_controller.control
-            curr = pygame.time.get_ticks()
-            lane_id,road_id =self.simulator.vehicle_variables.lane_id,self.simulator.vehicle_variables.road_id
-        
-            closest = min(self.static_obstacles,key=lambda f:f.distance)
-
+        if self.spawn_data:
+            if self.state==State.ACTIVE:
+                control = self.simulator.vehicle_controller.control
+                curr = pygame.time.get_ticks()
+                lane_id,road_id =self.simulator.vehicle_variables.lane_id,self.simulator.vehicle_variables.road_id
             
-            if closest.angle<10:
-                
-                if closest.distance<25:
-                    print("here")
-                    ch,lane = self.traffic_controller.collision_control.try_lane_change2(closest)
-                    if ch:
-                        self.prev_lane = self.simulator.vehicle_variables.lane_id
-                        self.state = State.PAUSE
-                    else:
-                        if closest.type==Type.BLOCKING:
-                            control.brake = 1.0
-                            control.throttle = 0.0
+                closest = min(self.static_obstacles,key=lambda f:f.distance)
 
-            if self.last_closest==None or self.last_closest!=closest:
-                self.last_closest = closest
-                print("New", str(closest))
+                
+                if closest.angle<10:
+                    
+                    if closest.distance<12:
+                        print("here")
+                        ch,lane = self.traffic_controller.collision_control.try_lane_change2(closest)
+                        if ch:
+                            self.prev_lane = self.simulator.vehicle_variables.lane_id
+                            self.state = State.PAUSE
+                        else:
+                            if closest.type==Type.BLOCKING:
+                                control.brake = 1.0
+                                control.throttle = 0.0
+
+                if self.last_closest==None or self.last_closest!=closest:
+                    self.last_closest = closest
+                    print("New", str(closest))
+                else:
+                    print("Same",str(closest) )
             else:
-                print("Same",str(closest) )
-        else:
-            print(self.state)
-            self.update_active_state()
+                print(self.state)
+                self.update_active_state()
 
     def update_active_state(self):
         w = self.simulator.vehicle_variables.vehicle_waypoint
@@ -537,7 +539,7 @@ class Props:
             
             self.spawn_non_blocking(w)
             self.static_obstacles.append(StaticObstacle(self.simulator,w,type_))
-            
+
         self.spawn_data.append([w,type_])
             
 
