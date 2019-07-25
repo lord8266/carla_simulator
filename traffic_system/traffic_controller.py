@@ -16,9 +16,10 @@ import lane_ai
 from agents.tools import misc
 from lane_ai import Obstacle
 from collision_control import SpeedControlEnvironment,CollisionControl
+
 class TrafficController:
 
-    def __init__(self,simulator,vehicle_count):
+    def __init__(self,simulator,vehicle_count,max_pedestrians):
 
         self.simulator = simulator
         self.prev = pygame.time.get_ticks()
@@ -33,6 +34,7 @@ class TrafficController:
         self.curr_locations = []
         self.lane_obstacles = {}
         self.collision_control = CollisionControl(self)
+        self.max_pedestrians= max_pedestrians
 
     def add_vehicles(self):
         blueprints = self.simulator.world.get_blueprint_library().filter('vehicle.*')
@@ -58,6 +60,68 @@ class TrafficController:
             # print(response)
             actor_list.append(response.actor_id)
         self.get_actors(actor_list)
+
+    def add_pedestrians(self):
+        SpawnActor = carla.command.SpawnActor
+        SetAutopilot = carla.command.SetAutopilot
+        FutureActor = carla.command.FutureActor
+        blueprintsWalkers = self.simulator.blueprint_library.filter('walker.pedestrian.*')
+
+        spawn_points =[]
+        for i in range(self.max_pedestrians):
+            spawn_point = carla.Transform()
+            loc = self.simulator.world.get_random_location_from_navigation()
+            if (loc != None):
+                loc.z+=2
+                spawn_point.location = loc
+                spawn_points.append(spawn_point)
+
+        batch = []
+        for s in spawn_points:
+            
+            walker_bp = random.choice(blueprintsWalkers)
+
+            if walker_bp.has_attribute('is_invincible'):
+                walker_bp.set_attribute('is_invincible', 'false')
+            batch.append(SpawnActor(walker_bp, s))
+        results = self.simulator.client.apply_batch_sync(batch, True)
+
+        walkers_list =[]
+        for i in range(len(results)):
+            if results[i].error:
+                print(results[i].error)
+            else:
+                walkers_list.append({"id": results[i].actor_id})
+
+        print(f'Spawned {len(walkers_list)} pedestrians')
+        batch = []
+        walker_controller_bp =self.simulator.world.get_blueprint_library().find('controller.ai.walker')
+
+        for i in range(len(walkers_list)):
+            batch.append(SpawnActor(walker_controller_bp, carla.Transform(), walkers_list[i]["id"]))
+        results = self.simulator.client.apply_batch_sync(batch, True)
+
+        for i in range(len(results)):
+            if results[i].error:
+                print(results[i].error)
+            else:
+                walkers_list[i]["con"] = results[i].actor_id
+
+        all_id = []
+        for i in range(len(walkers_list)):
+            all_id.append(walkers_list[i]["con"])
+            all_id.append(walkers_list[i]["id"])
+        self.pedestrians = self.simulator.world.get_actors(all_id)
+
+
+        for i in range(0, len(all_id), 2):
+            # start walker
+            self.pedestrians[i].start()
+            # set walk to random point
+            self.pedestrians[i].go_to_location(self.simulator.world.get_random_location_from_navigation())
+            # random max speed
+
+            self.pedestrians[i].set_max_speed(1 + random.random())    # max speed between 1 and 2 (default is 1.4 m/s)
 
     def get_actors(self,actor_list):
         vehicles = list(self.simulator.world.get_actors(actor_list))
