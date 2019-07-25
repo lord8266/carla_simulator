@@ -537,6 +537,7 @@ class Props:
             
             self.spawn_non_blocking(w)
             self.static_obstacles.append(StaticObstacle(self.simulator,w,type_))
+            
         self.spawn_data.append([w,type_])
             
 
