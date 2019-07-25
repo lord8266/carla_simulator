@@ -35,7 +35,8 @@ class TrafficController:
         self.lane_obstacles = {}
         self.collision_control = CollisionControl(self)
         self.max_pedestrians= max_pedestrians
-
+        self.props = Props(self)
+        
     def add_vehicles(self):
         blueprints = self.simulator.world.get_blueprint_library().filter('vehicle.*')
         blueprints = [x for x in blueprints if int(x.get_attribute('number_of_wheels')) == 4]
@@ -137,17 +138,9 @@ class TrafficController:
         for v in self.vehicles:
             
             t = v.get_transform()
-            
             p2 = t.location
-            w_t = self.simulator.map.get_waypoint(p2)
 
-            # if abs(w_t.transform.location.z-p2.z)>10:
-            #     self.reset_vehicle(v,self.get_far_away(15,v))
 
-            # elif abs(navigation_system.NavigationSystem.transform_angle(t.rotation.roll%360)- navigation_system.NavigationSystem.transform_angle(w_t.transform.rotation.roll%360))>45:
-            #     self.reset_vehicle(v,self.get_far_away(15,v))
-            # elif abs(navigation_system.NavigationSystem.transform_angle(t.rotation.pitch%360)- navigation_system.NavigationSystem.transform_angle(w_t.transform.rotation.pitch%360))>45:
-            #     self.reset_vehicle(v,self.get_far_away(15,v))
 
             self.curr_locations.append(p2)
             d = navigation_system.NavigationSystem.get_distance(p1,p2,res=1)
@@ -397,8 +390,150 @@ class TrafficController:
         self.surrounding_data = self.predict_future()
         self.collision_control.update()
         self.update_local_front()
+        self.props.update()
+class Type(Enum):
+    BLOCKING=1,
+    NON_BLOCKING=2
 
+class State(Enum):
+    PAUSE=1,
+    ACTIVE=2,    
+class Props:
 
+    def __init__(self,traffic_controller):
+        self.traffic_controller = traffic_controller
+        self.simulator = traffic_controller.simulator
+        self.lib = self.simulator.blueprint_library
+        self.client = self.simulator.client
+        self.map= self.simulator.map
+        self.world  =self.simulator.world
+        self.load_spawn_data()
+        self.prev_time = pygame.time.get_ticks()
+        self.prev_time2 = self.prev_time
+        self.spawn_props()
+        self.state = State.ACTIVE
+
+    def load_spawn_data(self):
+
+        f = np.load('spawn_data.npy')
+        self.spawn_data = [ (self.map.get_waypoint(carla.Location(t[0],t[1],t[2])), index==1 and Type.BLOCKING or Type.NON_BLOCKING) for t,index in zip(f[:,:3],f[:,3].astype(int) ) ]
+        for a,b in self.spawn_data:
+            print(a,b)
+    # draw_line(self, begin, end, thickness=0.1f, color=(255,0,0), life_time=-1.0f, persistent_lines=True) 
+
+    def draw_prop_signals(self):
+        d = self.world.debug
+        for w,t in self.spawn_data:
+            start = w.transform.location
+            end = carla.Location(start.x,start.y,start.z+300)
+            if t==Type.BLOCKING:
+                d.draw_line(start,end,thickness=1.0,color=carla.Color(255,0,0),life_time=0.5)
+            else:
+                d.draw_line(start,end,thickness=1.0,color=carla.Color(0,255,0),life_time=0.5)
+       
+    def update(self):
+        curr =pygame.time.get_ticks()
+
+        if (curr-self.prev_time)>1000:
+            self.prev_time = curr
+            self.draw_prop_signals()
+        for i in self.static_obstacles:
+            i.update()
+        self.prop_priority()
+
+    def spawn_props(self):
+        self.static_obstacles =[]
+        blocking_lib = self.lib.find('static.prop.trafficcone01')
+        non_blocking_lib = self.lib.find('static.prop.briefcase')
+        self.props = []
+        for a,b in self.spawn_data:
+            if b==Type.BLOCKING:
+                self.props+=self.spawn_group(blocking_lib,a)
+            else:
+                self.props.append(self.world.spawn_actor(non_blocking_lib,a.transform))
+            self.static_obstacles.append(StaticObstacle(self.simulator,a,b))
+
+    def spawn_group(self,lib,spawn_point):
+        spawn1 =  spawn_point.transform
+        group = []
+        group.append( self.world.spawn_actor(lib,spawn1))
+        group.append(self.world.spawn_actor(lib,carla.Transform(carla.Location(0,-0.7,0),carla.Rotation() ),attach_to=group[0] )  )
+        group.append(self.world.spawn_actor(lib,carla.Transform(carla.Location(0,0.7,0),carla.Rotation() ),attach_to=group[0] ))
+        return group
+
+    def prop_priority(self):
         
+        if self.state==State.ACTIVE:
+            control = self.simulator.vehicle_controller.control
+            curr = pygame.time.get_ticks()
+            lane_id,road_id =self.simulator.vehicle_variables.lane_id,self.simulator.vehicle_variables.road_id
+        
+            for a in self.static_obstacles:
+                if a.type==Type.BLOCKING:
+                    if lane_id==a.lane_id and road_id==a.road_id:
+                        if 7<a.distance<15:
+                            ch,lane = self.traffic_controller.collision_control.try_lane_change()
+                            if ch:
+                                self.target_lane = lane
+                                self.state = State.PAUSE
+                            else:
+                                control.brake = 1.0
+                                control.throttle = 0.0
 
+        else:
+            self.update_active_state()
 
+    def update_active_state(self):
+        lane = self.simulator.vehicle_variables.lane_id
+        if lane==self.target_lane:
+            self.state = State.ACTIVE
+
+    
+            
+
+class StaticObstacle:
+
+    def __init__(self,simulator,waypoint,type_):
+        self.waypoint = waypoint
+        self.location = waypoint.transform.location
+        self.last_updated = pygame.time.get_ticks()
+        self.prev_distance = 0
+        self.update_cnt = 0
+        self.type = type_
+        self.simulator = simulator
+
+    def update(self):
+
+        self.distance = navigation_system.NavigationSystem.get_distance(self.location,self.simulator.vehicle_variables.vehicle_location,res=1)
+        self.waypoint = self.simulator.map.get_waypoint(self.location)
+        self.road_id = self.waypoint.road_id
+        self.lane_id = self.waypoint.lane_id
+        self.get_direction()
+        self.delta_d = self.distance-self.prev_distance
+        if not self.update_cnt%7:
+            self.prev_distance = self.distance
+        self.update_cnt+=1
+        if self.update_cnt>10000:
+            self.update_cnt =0
+
+    def __str__(self):
+        
+        return f'{self.type}, Distance:{self.distance}, Delta_D:{self.delta_d}, Angle:{self.angle}'
+
+    
+    def get_direction(self):
+        
+        vehicle_pos = self.simulator.vehicle_variables.vehicle_location
+        rot = self.simulator.vehicle_variables.vehicle_waypoint.transform.rotation
+        forward_vector = rot.get_forward_vector()
+        forward_vector = [forward_vector.x,forward_vector.y,forward_vector.z]
+
+        obstacle_vector = np.array(misc.vector(vehicle_pos,self.location))
+
+        dot = obstacle_vector.dot(forward_vector)
+
+        arc_cos = np.degrees(np.arccos(dot))
+       
+        self.angle  =  arc_cos
+    
+   

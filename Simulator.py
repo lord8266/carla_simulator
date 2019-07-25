@@ -115,7 +115,7 @@ class Simulator:
         self.lane_ai = lane_ai.LaneAI(self)
         self.traffic_controller = traffic_controller.TrafficController(self,120,100)
         self.traffic_controller.add_vehicles()
-        
+        self.traffic_controller.add_pedestrians()
         #need to change from here
         self.navigation_system.make_local_route()
         self.agent = basic_agent.BasicAgent(self.vehicle_controller.vehicle)

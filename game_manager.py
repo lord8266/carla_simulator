@@ -8,6 +8,7 @@ import Simulator
 import random
 from queue import Queue
 import scipy.misc
+import os
 
 class GameManager:
 
@@ -27,7 +28,13 @@ class GameManager:
         self.pixel_buffer  =PixelBuffer(simulator)
         self.saver_pixels = None
         self.started = False
-        
+        self.array = []
+        self.load_array()
+    def load_array(self):
+        a = os.listdir()
+        if 'spawn_data.npy' in a:
+            self.array = list(np.load('spawn_data.npy'))
+
     def initialize_pygame(self,resolution):
         pygame.init()
         self.display = pygame.display.set_mode(resolution,pygame.HWSURFACE | pygame.DOUBLEBUF)
@@ -84,18 +91,13 @@ class GameManager:
                     self.simulator.camera_switch()
 
                 if event.key==pygame.K_a:
-                    
-                    f= open('density.txt','a')
-                    density = sum(np.all(self.array==[0,0,142],axis=1))
-                    f.write(str(density)+"\n")
-                    f.close()
-
-                if event.key ==pygame.K_q:
-                    self.simulator.reward_system.status = Simulator.Status.COMPLETED
+                   self.array.append(self.get_transform_array(1))
+                   np.save('spawn_data',self.array)
 
                 if event.key ==pygame.K_b:
-                    raise Exception()
-                
+                    self.array.append(self.get_transform_array(2))
+                    np.save('spawn_data',self.array)
+
                 if event.key==pygame.K_l:
                     self.simulator.traffic_controller.collision_control.try_lane_change(True)
                     
@@ -103,8 +105,12 @@ class GameManager:
                 if event.key==pygame.K_r:
                     pass
                 #    self.simulator.lane_ai.lane_changer.check_new_lane(min_angle=150)
-                   
-            
+                
+        
+    def get_transform_array(self,type_):
+        a = self.simulator.vehicle_variables.vehicle_location
+        print(a,type_)
+        return [a.x,a.y,a.z]+[ float(type_) ]    
     def print_waypoint(self,waypoint):
         print("transform :",waypoint.transform)
         print("lane width :",waypoint.lane_width)

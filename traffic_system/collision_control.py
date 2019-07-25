@@ -20,6 +20,7 @@ HIDDEN2_UNITS = 20
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
 class LaneState(Enum):
     SAME_LANE=1,
     LANE_CHANGE=2,
@@ -55,7 +56,7 @@ class CollisionControl:
             self.last_state = self.state
 
 
-  
+
 
     
     def modify_control(self,action,distance,delta_d):
@@ -153,6 +154,9 @@ class CollisionControl:
             self.check_completion = True
             self.traffic_controller.simulator.navigation_system.add_event(prev_,next_)
             self.target = next_.lane_id
+            return True,self.target
+
+        return False,None
 
 
 
