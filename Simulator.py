@@ -114,7 +114,7 @@ class Simulator:
         self.collision_vehicle =False
         self.lane_ai = lane_ai.LaneAI(self)
         self.traffic_controller = traffic_controller.TrafficController(self,120,100)
-        self.traffic_controller.add_vehicles()
+        # self.traffic_controller.add_vehicles()
         self.traffic_controller.add_pedestrians()
         #need to change from here
         self.navigation_system.make_local_route()
@@ -273,8 +273,8 @@ class Simulator:
 
         w = self.vehicle_variables.vehicle_waypoint
         
-        if w.is_intersection and self.vehicle_variables.vehicle_velocity_magnitude > 5 :
-            self.vehicle_controller.control.throttle *= 0.6
+        # if w.is_intersection and self.vehicle_variables.vehicle_velocity_magnitude > 5 :
+        #     self.vehicle_controller.control.throttle *= 0.6
         # if w.is_intersection and self.vehicle_controller.control.steer > 0:
         #     self.vehicle_controller.control.throttle *= 1.3
         self.traffic_controller.update_local_front()

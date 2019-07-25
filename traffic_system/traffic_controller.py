@@ -16,6 +16,7 @@ import lane_ai
 from agents.tools import misc
 from lane_ai import Obstacle
 from collision_control import SpeedControlEnvironment,CollisionControl
+from copy import deepcopy
 
 class TrafficController:
 
@@ -36,7 +37,8 @@ class TrafficController:
         self.collision_control = CollisionControl(self)
         self.max_pedestrians= max_pedestrians
         self.props = Props(self)
-        
+        self.vehicles = []
+
     def add_vehicles(self):
         blueprints = self.simulator.world.get_blueprint_library().filter('vehicle.*')
         blueprints = [x for x in blueprints if int(x.get_attribute('number_of_wheels')) == 4]
@@ -391,6 +393,7 @@ class TrafficController:
         self.collision_control.update()
         self.update_local_front()
         self.props.update()
+
 class Type(Enum):
     BLOCKING=1,
     NON_BLOCKING=2
@@ -402,6 +405,7 @@ class Props:
 
     def __init__(self,traffic_controller):
         self.traffic_controller = traffic_controller
+        self.blocking_blueprints = [i[:-1] for i in open('props_blocking.txt').readlines() ]
         self.simulator = traffic_controller.simulator
         self.lib = self.simulator.blueprint_library
         self.client = self.simulator.client
@@ -412,6 +416,7 @@ class Props:
         self.prev_time2 = self.prev_time
         self.spawn_props()
         self.state = State.ACTIVE
+        self.last_closest = None
 
     def load_spawn_data(self):
 
@@ -436,23 +441,39 @@ class Props:
 
         if (curr-self.prev_time)>1000:
             self.prev_time = curr
-            self.draw_prop_signals()
+            # self.draw_prop_signals()
         for i in self.static_obstacles:
             i.update()
         self.prop_priority()
 
     def spawn_props(self):
         self.static_obstacles =[]
-        blocking_lib = self.lib.find('static.prop.trafficcone01')
-        non_blocking_lib = self.lib.find('static.prop.briefcase')
+        blocking_lib = self.lib.find(random.choice(self.blocking_blueprints))
+        
         self.props = []
         for a,b in self.spawn_data:
             if b==Type.BLOCKING:
                 self.props+=self.spawn_group(blocking_lib,a)
             else:
-                self.props.append(self.world.spawn_actor(non_blocking_lib,a.transform))
+                self.spawn_non_blocking(a)
             self.static_obstacles.append(StaticObstacle(self.simulator,a,b))
 
+    def spawn_non_blocking(self,w):
+        lib = self.lib.find('static.prop.plantpot03')
+        l =[w.transform.location.x,w.transform.location.y,w.transform.location.z]
+        t =carla.Transform(carla.Location( l[0] ,l[1],l[2]-0.35),w.transform.rotation)
+        d =self.world.debug
+        
+        # draw_point(self, location, size=0.1f, color=(255,0,0), life_time=-1.0f, persistent_lines=True) 
+        # d.draw_line(l,l2,thickness=2.0,color=carla.Color(0,0,0),life_time=3600)
+        st = self.world.spawn_actor(lib,t)
+        batch = []
+        for i in range(10):
+            angle = i*36
+            l = [math.cos(math.radians(angle))*0.8,math.sin(math.radians(angle) )*0.8 ]
+            batch.append(carla.command.SpawnActor(lib,carla.Transform(carla.Location(l[0],l[1]) ),st))
+        self.client.apply_batch(batch)
+        
     def spawn_group(self,lib,spawn_point):
         spawn1 =  spawn_point.transform
         group = []
@@ -468,27 +489,55 @@ class Props:
             curr = pygame.time.get_ticks()
             lane_id,road_id =self.simulator.vehicle_variables.lane_id,self.simulator.vehicle_variables.road_id
         
-            for a in self.static_obstacles:
-                if a.type==Type.BLOCKING:
-                    if lane_id==a.lane_id and road_id==a.road_id:
-                        if 7<a.distance<15:
-                            ch,lane = self.traffic_controller.collision_control.try_lane_change()
-                            if ch:
-                                self.target_lane = lane
-                                self.state = State.PAUSE
-                            else:
-                                control.brake = 1.0
-                                control.throttle = 0.0
+            closest = min(self.static_obstacles,key=lambda f:f.distance)
 
+            
+            if closest.angle<10:
+                
+                if closest.distance<25:
+                    print("here")
+                    ch,lane = self.traffic_controller.collision_control.try_lane_change2(closest)
+                    if ch:
+                        self.prev_lane = self.simulator.vehicle_variables.lane_id
+                        self.state = State.PAUSE
+                    else:
+                        if closest.type==Type.BLOCKING:
+                            control.brake = 1.0
+                            control.throttle = 0.0
+
+            if self.last_closest==None or self.last_closest!=closest:
+                self.last_closest = closest
+                print("New", str(closest))
+            else:
+                print("Same",str(closest) )
         else:
+            print(self.state)
             self.update_active_state()
 
     def update_active_state(self):
-        lane = self.simulator.vehicle_variables.lane_id
-        if lane==self.target_lane:
+        w = self.simulator.vehicle_variables.vehicle_waypoint
+        curr = pygame.time.get_ticks()
+        if self.prev_lane!=w.lane_id:
+            print("Reach Lane")
             self.state = State.ACTIVE
 
-    
+    def new_prop(self,type_):
+        w =self.simulator.vehicle_variables.vehicle_waypoint
+        for i in range(5):
+            w = w.next(6.0)[0]
+
+        if type_==Type.BLOCKING:
+
+            blocking_lib = self.lib.find(random.choice(self.blocking_blueprints))
+            
+            group = self.spawn_group(blocking_lib,w)
+            self.static_obstacles.append(StaticObstacle(self.simulator,w,type_))
+        else:
+
+            
+            self.spawn_non_blocking(w)
+            self.static_obstacles.append(StaticObstacle(self.simulator,w,type_))
+        self.spawn_data.append([w,type_])
             
 
 class StaticObstacle:

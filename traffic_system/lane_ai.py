@@ -7,6 +7,7 @@ from agents.tools import misc
 import pygame
 from enum import Enum
 import collision_control
+
 class LaneAI:
     def __init__(self,simulator):
             self.count = 1

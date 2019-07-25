@@ -51,10 +51,6 @@ class CollisionControl:
         self.check_lane_change_completion()
      
 
-        if self.state!=self.last_state:
-            print(self.state)
-            self.last_state = self.state
-
 
 
 
@@ -158,7 +154,27 @@ class CollisionControl:
 
         return False,None
 
+    def try_lane_change2(self,obs_same):
 
+        lane_id = self.traffic_controller.simulator.vehicle_variables.lane_id
+        lane_obstacles = self.traffic_controller.lane_obstacles
+        passed = False
+        passed,prev_,next_ = self.change_lane()
+        if passed:
+            lane_id =next_.lane_id
+            if lane_id in lane_obstacles:
+                if lane_obstacles[lane_id]:
+                    obs_next = lane_obstacles[lane_id][0]
+                    if (obs_next.distance-obs_same.distance)<2:
+                        passed = False
+                        
+        if passed:
+            self.check_completion = True
+            self.traffic_controller.simulator.navigation_system.add_event(prev_,next_)
+            self.target = next_.lane_id
+            return True,self.target
+
+        return False,None
 
     def change_lane(self):
         return self.traffic_controller.simulator.lane_ai.request_new_lane()

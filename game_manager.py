@@ -9,7 +9,7 @@ import random
 from queue import Queue
 import scipy.misc
 import os
-
+import traffic_controller
 class GameManager:
 
     def __init__(self,simulator,resolution=(640,480)):
@@ -103,9 +103,13 @@ class GameManager:
                     
 
                 if event.key==pygame.K_r:
-                    pass
+                    self.simulator.navigation_system.re_route()
                 #    self.simulator.lane_ai.lane_changer.check_new_lane(min_angle=150)
                 
+                if event.key==pygame.K_i:
+                    self.simulator.traffic_controller.props.new_prop(traffic_controller.Type.BLOCKING)
+                if event.key==pygame.K_j:
+                    self.simulator.traffic_controller.props.new_prop(traffic_controller.Type.NON_BLOCKING)
         
     def get_transform_array(self,type_):
         a = self.simulator.vehicle_variables.vehicle_location

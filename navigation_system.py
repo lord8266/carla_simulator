@@ -91,7 +91,7 @@ class NavigationSystem:
         self.ideal_route_waypoints = parallel_lane+ self.ideal_route_waypoints[self.curr_pos:]
         self.ideal_route = [w.transform for w in parallel_lane] + self.ideal_route[self.curr_pos:]
         # print("made it here")
-        drawing_library.draw_arrows(self.simulator.world.debug,[i.location for i in self.ideal_route][2:5],life_time=3)
+        # drawing_library.draw_lines(self.simulator.world.debug,[i.location for i in self.ideal_route][2:5],life_time=3)
         self.clean_route()
         self.fill_gaps()
         self.clean_back()
@@ -145,14 +145,14 @@ class NavigationSystem:
             self.local_route = self.local_route + [self.local_route[-1]]*add
             self.local_route_waypoints = self.local_route_waypoints + [self.local_route_waypoints[-1]]*add
         # print("choosing %d\n"%(self.curr_pos))
-        # self.fill_local_route_gaps()
+        self.fill_local_route_gaps()
 
     def fill_local_route_gaps(self):
 
         for i in range(len(self.local_route)-1):
             p1 = self.local_route[i].location
             p2  = self.local_route[i+1].location
-            if NavigationSystem.get_distance(p1,p2,res=1)>20:
+            if NavigationSystem.get_distance(p1,p2,res=1)>15:
                 self.simulator.lane_ai.lane_changer.state = lane_ai.State.RUNNING
                 self.re_route()
 
@@ -295,7 +295,7 @@ class NavigationSystem:
         dot = r_vec.x*unit_vec.x + r_vec.y*unit_vec.y
         angle = math.degrees(np.arccos(dot))
         # print(angle)
-        if angle>45:
+        if angle>35:
             return i+1 # True# (True,unit_vec,r_vec,dot)
         else:
             return i # (False,unit_vec,r_vec,dot)

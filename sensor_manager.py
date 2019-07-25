@@ -35,7 +35,7 @@ class SensorManager():
         camera_blueprint  = self.simulator.blueprint_library.find('sensor.camera.rgb')
         camera_blueprint.set_attribute('image_size_x', '640')
         camera_blueprint.set_attribute('image_size_y', '480')
-        spawn_transform = carla.Transform(carla.Location(x=-12.5, z=5.3),carla.Rotation(pitch=-7))
+        spawn_transform = carla.Transform(carla.Location(x=-4.5, z=2.3),carla.Rotation(pitch=-15))
         self.camera = self.simulator.world.spawn_actor(camera_blueprint,spawn_transform,attach_to=self.simulator.vehicle_controller.vehicle)
         
     
